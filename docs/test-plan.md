@@ -21,9 +21,9 @@ npm test
 
 | ID | Case | Expected |
 |----|------|----------|
-| D1 | Die has 6 faces | 1×J, 2×Strike, 1×Manoeuvre, 2×Blank |
+| D1 | Die has 6 faces | 1×J (Hit/Manoeuvre), 2×Strike, 1×Manoeuvre, 2×Blank |
 | D2 | Hit tier mapping | 0→none, 1→glance, 2→solid, 3+→crit |
-| D3 | Best 3 dice selection | Prefer J (3 hits) over strikes/blanks |
+| D3 | Best 3 dice selection | Prefer hit symbols (J and strikes) over blanks |
 | D4 | Damage resolution | Crit 4 − RES 1 = 3; no hits = 0 |
 | P1 | Base pool (stat > AGI) | 7 MAG vs AGI 3 → 4 dice |
 | P2 | Base pool (stat ≤ AGI) | 5 MEL vs AGI 5 → 1 die |

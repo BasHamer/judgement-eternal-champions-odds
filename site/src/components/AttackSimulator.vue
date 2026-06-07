@@ -604,9 +604,9 @@ function resetTargetStats() {
         >
           When symbol requirements and min weapon damage are met, the sim takes the
           manoeuvre path using the least weapon damage needed (not max damage). EV is
-          not reduced by RES. Symbol cost uses J and M faces only (≈⅓ per die): M = 1,
-          J = 2. Strike hits deal damage but do not pay manoeuvre cost. On the manoeuvre
-          path each J counts as 1 hit (one J = glance + EV; JJ with 3 dice = solid + EV).
+          not reduced by RES. J is Hit/Manoeuvre (1 hit + 1 manoeuvre symbol); M = 1
+          manoeuvre symbol. Strike hits deal damage but do not pay manoeuvre cost.
+          Crit needs 3 hit symbols (e.g. three strikes or J plus two strikes).
         </p>
 
         <v-divider class="my-4" />

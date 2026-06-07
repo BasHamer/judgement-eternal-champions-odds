@@ -1,11 +1,16 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
 import {
+  BLANK_FACE,
   JUDGEMENT_DIE_FACES,
+  J_FACE,
+  MANEUVER_FACE,
+  STRIKE_FACE,
   averageDamage,
   buildAttackSequence,
   calculateDicePoolSize,
   canMeetManeuverRequirements,
   chooseBestDiceForDamage,
+  chooseBestDiceForManeuvers,
   chooseBestManeuverEvOutcome,
   choosePureDamageOutcome,
   cumulativeProbabilities,
@@ -59,12 +64,13 @@ function poolParams(overrides = {}) {
 }
 
 describe('Judgement die', () => {
-  it('D1: has six faces with correct hit distribution', () => {
+  it('D1: has six faces with correct symbol distribution', () => {
     expect(JUDGEMENT_DIE_FACES).toHaveLength(6)
-    expect(JUDGEMENT_DIE_FACES.filter(d => d.hits === 3)).toHaveLength(1)
-    expect(JUDGEMENT_DIE_FACES.filter(d => d.hits === 1)).toHaveLength(2)
-    expect(JUDGEMENT_DIE_FACES.filter(d => d.maneuver === 1)).toHaveLength(1)
+    expect(JUDGEMENT_DIE_FACES.filter(d => d.judgement)).toHaveLength(1)
+    expect(JUDGEMENT_DIE_FACES.filter(d => d.hits === 1 && !d.judgement)).toHaveLength(2)
+    expect(JUDGEMENT_DIE_FACES.filter(d => d.maneuver === 1 && !d.judgement)).toHaveLength(1)
     expect(JUDGEMENT_DIE_FACES.filter(d => d.hits === 0 && d.maneuver === 0)).toHaveLength(2)
+    expect(J_FACE).toEqual({ hits: 1, maneuver: 1, judgement: true })
   })
 })
 
@@ -79,38 +85,40 @@ describe('hitsToTier', () => {
 })
 
 describe('chooseBestDiceForDamage', () => {
-  it('D3: selects highest-hit dice up to three', () => {
+  it('D3: selects highest-hit three dice when pool is larger than three', () => {
     const rolls = [
-      { hits: 0, maneuver: 0 },
-      { hits: 1, maneuver: 0 },
-      { hits: 3, maneuver: 0 },
-      { hits: 1, maneuver: 0 },
+      BLANK_FACE,
+      STRIKE_FACE,
+      J_FACE,
+      STRIKE_FACE,
     ]
-    const chosen = chooseBestDiceForDamage(rolls)
+    const chosen = chooseBestDiceForDamage(rolls, sabre, 0)
     expect(chosen).toHaveLength(3)
-    expect(chosen.reduce((s, d) => s + d.hits, 0)).toBe(5)
+    expect(chosen.reduce((s, d) => s + d.hits, 0)).toBe(3)
+    expect(resolveDamage(chosen, sabre, 0)).toBe(4)
   })
 })
 
 describe('resolveDamage', () => {
   it('D4: applies weapon tier and RES', () => {
-    const critOnly = [{ hits: 3, maneuver: 0 }]
+    const critOnly = [STRIKE_FACE, STRIKE_FACE, STRIKE_FACE]
     expect(resolveDamage(critOnly, sabre, 0)).toBe(4)
     expect(resolveDamage(critOnly, sabre, 1)).toBe(3)
-    expect(resolveDamage([{ hits: 0, maneuver: 0 }], sabre, 0)).toBe(0)
+    expect(resolveDamage([BLANK_FACE], sabre, 0)).toBe(0)
+    expect(resolveDamage([J_FACE], sabre, 0)).toBe(1)
   })
 
   it('D5: armour piercing reduces effective RES', () => {
-    const critOnly = [{ hits: 3, maneuver: 0 }]
+    const critOnly = [STRIKE_FACE, STRIKE_FACE, STRIKE_FACE]
     expect(resolveDamage(critOnly, sabre, 2, { armourPiercing: 1 })).toBe(3)
     expect(resolveDamage(critOnly, sabre, 2, { armourPiercing: 2 })).toBe(4)
   })
 
-  it('D6: manoeuvre path counts each J as one hit for damage tier', () => {
-    const twoJ = [{ hits: 3, maneuver: 0 }, { hits: 3, maneuver: 0 }, { hits: 0, maneuver: 0 }]
-    expect(hitSymbolsForDamageTier(twoJ, true)).toBe(2)
+  it('D6: J contributes one hit symbol like a strike', () => {
+    const twoJ = [J_FACE, J_FACE, BLANK_FACE]
+    expect(hitSymbolsForDamageTier(twoJ)).toBe(2)
+    expect(resolveDamage(twoJ, sabre, 0)).toBe(2)
     expect(resolveDamage(twoJ, sabre, 0, {}, { maneuverPath: true })).toBe(2)
-    expect(resolveDamage(twoJ, sabre, 0)).toBe(4)
   })
 })
 
@@ -233,10 +241,10 @@ describe('runMonteCarloSimulation', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0)
     const result = runMonteCarloSimulation(poolParams({
       attacker: abhothas,
-      target: skoll,
+      target: { stats: { agi: 3, res: 1 } },
       simulationScope: 'first',
     }), 100)
-    expect(rollDicePool(1)).toEqual([{ hits: 3, maneuver: 0 }])
+    expect(rollDicePool(3)).toEqual([J_FACE, J_FACE, J_FACE])
     expect(result.distribution[3]).toBe(100)
     expect(averageDamage(result.distribution)).toBe(3)
   })
@@ -245,15 +253,15 @@ describe('runMonteCarloSimulation', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0)
     const result = runMonteCarloSimulation(poolParams({
       attacker: abhothas,
-      target: skoll,
+      target: { stats: { agi: 3, res: 0 } },
       secondBasicAttack: true,
       simulationScope: 'combined',
     }), 50)
     expect(result.attackCount).toBe(2)
-    expect(result.attackPools).toEqual([1, 1])
-    expect(result.distribution[6]).toBe(50)
-    expect(result.sumManeuverAt[6] ?? 0).toBe(0)
-    expect(result.composition[6]).toEqual({ attackPct: 100, maneuverPct: 0 })
+    expect(result.attackPools).toEqual([3, 3])
+    expect(result.distribution[8]).toBe(50)
+    expect(result.sumManeuverAt[8] ?? 0).toBe(0)
+    expect(result.composition[8]).toEqual({ attackPct: 100, maneuverPct: 0 })
   })
 })
 
@@ -272,11 +280,7 @@ describe('maneuver expected value', () => {
   })
 
   it('EV2: takes manoeuvre path when requirements are met', () => {
-    const rolls = [
-      { hits: 1, maneuver: 0 },
-      { hits: 0, maneuver: 1 },
-      { hits: 0, maneuver: 0 },
-    ]
+    const rolls = [STRIKE_FACE, MANEUVER_FACE, BLANK_FACE]
     const pure = choosePureDamageOutcome(rolls, sabre, 1, {})
     expect(pure.total).toBe(0)
 
@@ -292,7 +296,7 @@ describe('maneuver expected value', () => {
   })
 
   it('EV3: prefers manoeuvre when viable even if pure damage is higher', () => {
-    const rolls = [{ hits: 1, maneuver: 0 }, { hits: 0, maneuver: 1 }]
+    const rolls = [STRIKE_FACE, MANEUVER_FACE]
     const pure = choosePureDamageOutcome(rolls, sabre, 0, {})
     expect(pure.total).toBe(1)
 
@@ -313,10 +317,7 @@ describe('maneuver expected value', () => {
   })
 
   it('EV4: expected value is not reduced by RES', () => {
-    const rolls = [
-      { hits: 1, maneuver: 0 },
-      { hits: 0, maneuver: 1 },
-    ]
+    const rolls = [STRIKE_FACE, MANEUVER_FACE]
     const outcome = resolveAttackDamageWithManeuverEv(rolls, sabre, 5, {}, {
       expectedValue: 4,
       minManeuvers: 1,
@@ -328,7 +329,7 @@ describe('maneuver expected value', () => {
   })
 
   it('EV5: accepts judgement symbol requirement instead of manoeuvres', () => {
-    const rolls = [{ hits: 3, maneuver: 0 }]
+    const rolls = [J_FACE]
     const outcome = resolveAttackDamageWithManeuverEv(rolls, sabre, 0, {}, {
       expectedValue: 5,
       minManeuvers: 0,
@@ -345,7 +346,7 @@ describe('maneuver expected value', () => {
 
     const result = runMonteCarloSimulation(poolParams({
       attacker: abhothas,
-      target: { stats: { mov: 3, agi: 5, mel: 6, mag: null, rng: null, res: 0 } },
+      target: { stats: { mov: 3, agi: 3, mel: 6, mag: null, rng: null, res: 0 } },
       secondBasicAttack: true,
       simulationScope: 'combined',
       maneuverEv: {
@@ -357,9 +358,9 @@ describe('maneuver expected value', () => {
       },
     }), 10)
 
-    expect(result.distribution[9]).toBe(10)
-    expect(result.composition[9].maneuverPct).toBeGreaterThan(0)
-    expect(result.composition[9].attackPct).toBeGreaterThan(0)
+    expect(result.distribution[12]).toBe(10)
+    expect(result.composition[12].maneuverPct).toBeGreaterThan(0)
+    expect(result.composition[12].attackPct).toBeGreaterThan(0)
   })
 
   it('EV7: tracks attack and manoeuvre composition at each total', () => {
@@ -411,13 +412,8 @@ describe('maneuver expected value', () => {
   })
 
   it('EV9: J dice count toward manoeuvre cost while still contributing hit damage', () => {
-    const rolls = [
-      { hits: 3, maneuver: 0 },
-      { hits: 3, maneuver: 0 },
-      { hits: 0, maneuver: 0 },
-    ]
-    const summary = summarizeChosenDice(rolls)
-    expect(maneuverSymbolCredit(rolls)).toBe(4)
+    const rolls = [J_FACE, J_FACE, BLANK_FACE]
+    expect(maneuverSymbolCredit(rolls)).toBe(2)
     expect(meetsManeuverSymbolRequirements(rolls, { minManeuvers: 2 })).toBe(true)
 
     const outcome = resolveAttackDamageWithManeuverEv(rolls, sabre, 0, {}, {
@@ -431,11 +427,7 @@ describe('maneuver expected value', () => {
   })
 
   it('EV10: two judgements and a blank beats pure damage when manoeuvre EV is set', () => {
-    const rolls = [
-      { hits: 3, maneuver: 0 },
-      { hits: 3, maneuver: 0 },
-      { hits: 0, maneuver: 0 },
-    ]
+    const rolls = [J_FACE, J_FACE, BLANK_FACE]
     const outcome = resolveAttackDamageWithManeuverEv(rolls, sabre, 0, {}, {
       expectedValue: 4,
       minManeuvers: 2,
@@ -447,11 +439,7 @@ describe('maneuver expected value', () => {
   })
 
   it('EV11: two judgements on manoeuvre path are solid before RES', () => {
-    const rolls = [
-      { hits: 3, maneuver: 0 },
-      { hits: 3, maneuver: 0 },
-      { hits: 0, maneuver: 0 },
-    ]
+    const rolls = [J_FACE, J_FACE, BLANK_FACE]
     expect(resolveDamage(rolls, sabre, 0, {}, { maneuverPath: true })).toBe(2)
     const outcome = resolveAttackDamageWithManeuverEv(rolls, sabre, 1, {}, {
       expectedValue: 4,
@@ -464,11 +452,7 @@ describe('maneuver expected value', () => {
   })
 
   it('EV12: strike hits do not pay manoeuvre symbol cost', () => {
-    const rolls = [
-      { hits: 1, maneuver: 0 },
-      { hits: 1, maneuver: 0 },
-      { hits: 0, maneuver: 1 },
-    ]
+    const rolls = [STRIKE_FACE, STRIKE_FACE, MANEUVER_FACE]
     expect(maneuverSymbolCredit(rolls)).toBe(1)
 
     const outcome = resolveAttackDamageWithManeuverEv(rolls, sabre, 0, {}, {
@@ -482,12 +466,8 @@ describe('maneuver expected value', () => {
   })
 
   it('EV13: two judgements plus manoeuvre face totals 6 (solid + EV)', () => {
-    const rolls = [
-      { hits: 3, maneuver: 0 },
-      { hits: 3, maneuver: 0 },
-      { hits: 0, maneuver: 1 },
-    ]
-    expect(maneuverSymbolCredit(rolls)).toBe(5)
+    const rolls = [J_FACE, J_FACE, MANEUVER_FACE]
+    expect(maneuverSymbolCredit(rolls)).toBe(3)
 
     const outcome = resolveAttackDamageWithManeuverEv(rolls, sabre, 0, {}, {
       expectedValue: 4,
@@ -501,15 +481,10 @@ describe('maneuver expected value', () => {
     expect(outcome.total).toBe(6)
   })
 
-  it('EV14: with spare dice, one J is enough for cost 2 (glance + EV, not solid)', () => {
-    const rolls = [
-      { hits: 3, maneuver: 0 },
-      { hits: 3, maneuver: 0 },
-      { hits: 0, maneuver: 0 },
-      { hits: 0, maneuver: 0 },
-    ]
+  it('EV14: two Js meet cost 2 with minimum weapon damage from spare dice', () => {
+    const rolls = [J_FACE, J_FACE, BLANK_FACE, BLANK_FACE]
     const pure = choosePureDamageOutcome(rolls, sabre, 0, {})
-    expect(pure.weaponDamage).toBe(4)
+    expect(pure.weaponDamage).toBe(2)
 
     const outcome = resolveAttackDamageWithManeuverEv(rolls, sabre, 0, {}, {
       expectedValue: 4,
@@ -517,11 +492,11 @@ describe('maneuver expected value', () => {
       requireMinDamage: true,
     })
     expect(outcome.usedManeuverPath).toBe(true)
-    expect(outcome.weaponDamage).toBe(1)
-    expect(outcome.total).toBe(5)
+    expect(outcome.weaponDamage).toBe(2)
+    expect(outcome.total).toBe(6)
   })
 
-  it('EV15: three-dice cost-2 success rate matches J/M face math (~45%)', () => {
+  it('EV15: three-dice cost-2 success rate matches J/M face math (~23%)', () => {
     let successes = 0
     for (let a = 0; a < 6; a++) {
       for (let b = 0; b < 6; b++) {
@@ -536,17 +511,13 @@ describe('maneuver expected value', () => {
         }
       }
     }
-    expect(successes / 216).toBeCloseTo(97 / 216, 5)
+    expect(successes / 216).toBeCloseTo(49 / 216, 5)
   })
 })
 
 describe('canMeetManeuverRequirements', () => {
   it('MV1: detects damage plus manoeuvre symbols on chosen dice', () => {
-    const rolls = [
-      { hits: 1, maneuver: 0 },
-      { hits: 0, maneuver: 1 },
-      { hits: 0, maneuver: 1 },
-    ]
+    const rolls = [STRIKE_FACE, MANEUVER_FACE, MANEUVER_FACE]
     expect(canMeetManeuverRequirements(rolls, sabre, 0, {}, {
       minDamage: 1,
       minManeuvers: 2,
@@ -555,16 +526,26 @@ describe('canMeetManeuverRequirements', () => {
   })
 
   it('MV2: fails when damage requirement is not met', () => {
-    const rolls = [
-      { hits: 0, maneuver: 1 },
-      { hits: 0, maneuver: 1 },
-      { hits: 0, maneuver: 0 },
-    ]
+    const rolls = [MANEUVER_FACE, MANEUVER_FACE, BLANK_FACE]
     expect(canMeetManeuverRequirements(rolls, sabre, 0, {}, {
       minDamage: 1,
       minManeuvers: 2,
       minJudgements: 0,
     })).toBe(false)
+  })
+
+  it('MV4: picks J first then strikes then manoeuvres', () => {
+    const rolls = [J_FACE, STRIKE_FACE, MANEUVER_FACE, BLANK_FACE]
+    const chosen = chooseBestDiceForManeuvers(rolls, sabre, 1, {}, {
+      minDamage: 1,
+      minManeuvers: 2,
+      minJudgements: 0,
+    })
+    expect(chosen).toHaveLength(3)
+    expect(chosen.filter(d => d.judgement)).toHaveLength(1)
+    expect(chosen.filter(d => d.hits === 1 && !d.judgement)).toHaveLength(1)
+    expect(resolveDamage(chosen, sabre, 1, {}, { maneuverPath: true })).toBeGreaterThanOrEqual(1)
+    expect(maneuverSymbolCredit(chosen)).toBeGreaterThanOrEqual(2)
   })
 })
 

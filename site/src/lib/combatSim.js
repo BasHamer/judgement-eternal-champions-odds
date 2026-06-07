@@ -1,4 +1,4 @@
-/** @typedef {{ hits: number, maneuver: number }} DieFace */
+/** @typedef {{ hits: number, maneuver: number, judgement?: boolean }} DieFace */
 
 /** @typedef {{
  *   melBonus?: number,
@@ -34,14 +34,26 @@
  *   usedManeuverPath: boolean,
  * }} AttackDamageOutcome */
 
+/** @type {DieFace} Judgement face — Hit/Manoeuvre (1 hit + 1 manoeuvre symbol) */
+export const J_FACE = { hits: 1, maneuver: 1, judgement: true }
+
+/** @type {DieFace} Strike face — 1 hit symbol */
+export const STRIKE_FACE = { hits: 1, maneuver: 0 }
+
+/** @type {DieFace} Manoeuvre face — 1 manoeuvre symbol */
+export const MANEUVER_FACE = { hits: 0, maneuver: 1 }
+
+/** @type {DieFace} Blank face */
+export const BLANK_FACE = { hits: 0, maneuver: 0 }
+
 /** @type {DieFace[]} */
 export const JUDGEMENT_DIE_FACES = [
-  { hits: 3, maneuver: 0 },
-  { hits: 1, maneuver: 0 },
-  { hits: 1, maneuver: 0 },
-  { hits: 0, maneuver: 1 },
-  { hits: 0, maneuver: 0 },
-  { hits: 0, maneuver: 0 },
+  J_FACE,
+  STRIKE_FACE,
+  STRIKE_FACE,
+  MANEUVER_FACE,
+  BLANK_FACE,
+  BLANK_FACE,
 ]
 
 export const EMPTY_MODIFIERS = {
@@ -123,14 +135,15 @@ export function enumerateDiceChoices(rolls, chooseCount) {
 }
 
 /**
- * How many dice to consider selecting from a pool (rules: all dice if pool ≤ 3, else 1–3).
+ * How many dice to consider selecting from a pool (rules: exactly 3 when pool ≥ 3,
+ * otherwise all dice in a smaller pool).
  * @param {number} poolSize
  * @returns {number[]}
  */
 export function enumerationChoiceCounts(poolSize) {
   if (poolSize <= 0) return []
-  if (poolSize <= 3) return [poolSize]
-  return [1, 2, 3]
+  if (poolSize < 3) return [poolSize]
+  return [3]
 }
 
 /**
@@ -147,14 +160,13 @@ export function enumerateAllDiceChoices(rolls) {
 }
 
 /**
- * Manoeuvre-symbol credit on chosen dice for cost checks. Only J and M faces count
- * (P ≈ 1/3 per die); strike hits do not pay manoeuvre cost. M = 1, J = 2.
+ * Manoeuvre-symbol credit on chosen dice. J and M faces each contribute 1 manoeuvre
+ * symbol (J is Hit/Manoeuvre); strike hits do not pay manoeuvre cost.
  * @param {DieFace[]} chosen
  * @returns {number}
  */
 export function maneuverSymbolCredit(chosen) {
-  const summary = summarizeChosenDice(chosen)
-  return summary.maneuvers + summary.judgements * 2
+  return summarizeChosenDice(chosen).maneuvers
 }
 
 /**
@@ -197,31 +209,128 @@ export function summarizeChosenDice(chosen) {
     (acc, die) => ({
       hits: acc.hits + die.hits,
       maneuvers: acc.maneuvers + die.maneuver,
-      judgements: acc.judgements + (die.hits >= 3 ? 1 : 0),
+      judgements: acc.judgements + (die.judgement ? 1 : 0),
     }),
     { hits: 0, maneuvers: 0, judgements: 0 },
   )
 }
 
 /**
- * Pick up to 3 dice that maximize hit symbols (damage-only optimization).
+ * Pick exactly 3 dice (or all dice when pool < 3) that maximize resolved damage.
+ * Uses hit-symbol priority: prefer J, then strikes, then blanks/manoeuvres.
  * @param {DieFace[]} rolls
+ * @param {{ glance: number, solid: number, crit: number }} [weapon]
+ * @param {number} [targetRes=0]
+ * @param {SimModifiers} [modifiers=EMPTY_MODIFIERS]
  * @returns {DieFace[]}
  */
-export function chooseBestDiceForDamage(rolls) {
+export function chooseBestDiceForDamage(
+  rolls,
+  weapon,
+  targetRes = 0,
+  modifiers = EMPTY_MODIFIERS,
+) {
+  if (rolls.length === 0) return []
+
+  const chooseCount = Math.min(3, rolls.length)
   const choices = enumerateAllDiceChoices(rolls)
   if (choices.length === 0) return []
 
   let best = choices[0]
+  let bestDamage = -1
   let bestHits = -1
   for (const choice of choices) {
     const hits = summarizeChosenDice(choice).hits
-    if (hits > bestHits) {
+    const damage = weapon
+      ? resolveDamage(choice, weapon, targetRes, modifiers)
+      : hits
+    if (damage > bestDamage || (damage === bestDamage && hits > bestHits)) {
+      bestDamage = damage
       bestHits = hits
       best = choice
     }
   }
   return best
+}
+
+/**
+ * Pick dice for combat manoeuvres: J first, then strikes until min damage past RES,
+ * then fill remaining slots with manoeuvre faces. Uses exactly 3 dice when pool ≥ 3.
+ * @param {DieFace[]} rolls
+ * @param {{ glance: number, solid: number, crit: number }} weapon
+ * @param {number} targetRes
+ * @param {SimModifiers} modifiers
+ * @param {{ minDamage?: number, minManeuvers?: number, minJudgements?: number }} requirements
+ * @returns {DieFace[] | null}
+ */
+export function chooseBestDiceForManeuvers(rolls, weapon, targetRes, modifiers, requirements) {
+  const minDamage = requirements.minDamage ?? 1
+  const minManeuvers = requirements.minManeuvers ?? 0
+  const minJudgements = requirements.minJudgements ?? 0
+  const chooseCount = Math.min(3, rolls.length)
+  if (chooseCount === 0) return null
+
+  const indexed = rolls.map((die, index) => ({ die, index }))
+  /** @type {number[]} */
+  const picked = []
+
+  const isJ = (/** @type {DieFace} */ d) => d.judgement === true
+  const isStrike = (/** @type {DieFace} */ d) => d.hits > 0 && !d.judgement
+  const isM = (/** @type {DieFace} */ d) => d.maneuver > 0 && !d.judgement
+  const isBlank = (/** @type {DieFace} */ d) => d.hits === 0 && d.maneuver === 0
+
+  function available(filter) {
+    return indexed.filter(x => !picked.includes(x.index) && filter(x.die))
+  }
+
+  function pick(filter) {
+    const next = available(filter)[0]
+    if (!next || picked.length >= chooseCount) return false
+    picked.push(next.index)
+    return true
+  }
+
+  function chosenDice() {
+    return picked.map(index => rolls[index])
+  }
+
+  // 1. J first — cover judgement requirement and manoeuvre symbol cost
+  while (picked.length < chooseCount) {
+    const chosen = chosenDice()
+    const summary = summarizeChosenDice(chosen)
+    const symbols = maneuverSymbolCredit(chosen)
+    const judgementsMet = minJudgements === 0 || summary.judgements >= minJudgements
+    if (judgementsMet && (minManeuvers === 0 || symbols >= minManeuvers)) break
+    if (!pick(isJ)) break
+  }
+
+  // 2–3. Add strikes until weapon damage past RES meets minDamage
+  let damage = resolveDamage(chosenDice(), weapon, targetRes, modifiers, { maneuverPath: true })
+  while (damage < minDamage && picked.length < chooseCount) {
+    if (!pick(isStrike)) break
+    damage = resolveDamage(chosenDice(), weapon, targetRes, modifiers, { maneuverPath: true })
+  }
+
+  // 4. Fill remaining slots with manoeuvre faces for symbol cost
+  while (picked.length < chooseCount && maneuverSymbolCredit(chosenDice()) < minManeuvers) {
+    if (!pick(isM) && !pick(isJ)) break
+  }
+
+  // Pad to chooseCount with blanks, then any leftover dice
+  for (const filter of [isBlank, isM, isStrike, isJ]) {
+    while (picked.length < chooseCount) {
+      if (!pick(filter)) break
+    }
+  }
+
+  if (picked.length < chooseCount) return null
+
+  const chosen = chosenDice()
+  damage = resolveDamage(chosen, weapon, targetRes, modifiers, { maneuverPath: true })
+  if (damage < minDamage) return null
+  if (!meetsManeuverSymbolRequirements(chosen, requirements)) return null
+
+  return chosen
 }
 
 export const EMPTY_MANEUVER_EV = {
@@ -301,7 +410,7 @@ export function chooseBestManeuverEvOutcome(rolls, weapon, targetRes, modifiers,
  * @returns {AttackDamageOutcome}
  */
 export function choosePureDamageOutcome(rolls, weapon, targetRes, modifiers) {
-  const chosen = chooseBestDiceForDamage(rolls)
+  const chosen = chooseBestDiceForDamage(rolls, weapon, targetRes, modifiers)
   const weaponDamage = resolveDamage(chosen, weapon, targetRes, modifiers)
   return {
     weaponDamage,
@@ -351,7 +460,7 @@ export function resolveAttackDamageWithManeuverEv(
  * @returns {number}
  */
 export function maxDamageFromRolls(rolls, weapon, targetRes, modifiers) {
-  const chosen = chooseBestDiceForDamage(rolls)
+  const chosen = chooseBestDiceForDamage(rolls, weapon, targetRes, modifiers)
   return resolveDamage(chosen, weapon, targetRes, modifiers)
 }
 
@@ -438,20 +547,7 @@ export function canMeetManeuverRequirements(
   modifiers,
   requirements,
 ) {
-  const minDamage = requirements.minDamage ?? 1
-  const choices = enumerateAllDiceChoices(rolls)
-
-  for (const choice of choices) {
-    const damage = resolveDamage(choice, weapon, targetRes, modifiers, { maneuverPath: true })
-    if (
-      damage >= minDamage
-      && meetsManeuverSymbolRequirements(choice, requirements)
-    ) {
-      return true
-    }
-  }
-
-  return false
+  return chooseBestDiceForManeuvers(rolls, weapon, targetRes, modifiers, requirements) !== null
 }
 
 /**
@@ -480,20 +576,13 @@ export function weaponDamageForTier(weapon, tier) {
 }
 
 /**
- * Hit symbols used for glance/solid/crit tier. On the manoeuvre+EV path each J
- * contributes 1 hit (solid for JJ) while still paying manoeuvre/J symbol cost.
+ * Hit symbols (H) used for glance/solid/crit tier. J and strikes each contribute 1 H.
  * @param {DieFace[]} chosen
- * @param {boolean} [maneuverPath=false]
+ * @param {boolean} [_maneuverPath=false]
  * @returns {number}
  */
-export function hitSymbolsForDamageTier(chosen, maneuverPath = false) {
-  if (!maneuverPath) {
-    return summarizeChosenDice(chosen).hits
-  }
-  return chosen.reduce(
-    (acc, die) => acc + (die.hits >= 3 ? 1 : die.hits),
-    0,
-  )
+export function hitSymbolsForDamageTier(chosen, _maneuverPath = false) {
+  return summarizeChosenDice(chosen).hits
 }
 
 /**
