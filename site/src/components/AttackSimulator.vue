@@ -567,7 +567,27 @@ function resetTargetStats() {
           <p v-if="equippedArtefact">
             <strong>Artefact:</strong> {{ equippedArtefact.name }}
           </p>
-          <template v-if="!comparisonMode">
+          <template v-if="comparisonMode && comparisonSummary.length">
+            <p class="mb-2"><strong>Comparison damage</strong></p>
+            <div class="comparison-summary">
+              <div
+                v-for="entry in comparisonSummary"
+                :key="entry.id"
+                class="comparison-summary__row"
+              >
+                <span
+                  class="comparison-legend__swatch"
+                  :class="`comparison-legend__swatch--${entry.color}`"
+                />
+                <span class="comparison-summary__label">{{ entry.label }}</span>
+                <span class="comparison-summary__stats">
+                  mean {{ entry.meanTotal.toFixed(2) }}
+                  · avg {{ entry.averagePerAttack.toFixed(2) }}/attack
+                </span>
+              </div>
+            </div>
+          </template>
+          <template v-else>
             <p><strong>Mean total damage:</strong> {{ simulation.average.toFixed(2) }}</p>
             <p v-if="simulation.attackCount > 1">
               <strong>Average per attack:</strong>
@@ -815,6 +835,29 @@ function resetTargetStats() {
 .comparison-legend__stats {
   display: block;
   font-size: 0.8125rem;
+}
+
+.comparison-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comparison-summary__row {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.875rem;
+}
+
+.comparison-summary__label {
+  font-weight: 500;
+}
+
+.comparison-summary__stats {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .comparison-legend__swatch {
