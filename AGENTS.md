@@ -6,7 +6,7 @@ This repository builds an odds calculator for [Judgement: Eternal Champions](htt
 
 - **Batch C# console apps** under `tools/` for downloading and parsing game data
 - **Generated markdown docs** under `docs/` consumed by agents and the future simulator
-- **Static website** under `site/` (GitHub Pages target, not yet implemented)
+- **Static website** under `site/` (Vue + Vuetify, deployed to GitHub Pages)
 
 ## Directory Layout
 
@@ -15,13 +15,26 @@ This repository builds an odds calculator for [Judgement: Eternal Champions](htt
 | `tools/pdf-extractor` | Extract rulebook text from local PDF into `docs/rules-full.md` |
 | `tools/hoec-downloader` | Download hero, monster, and summon stats from HoEC into `docs/*.md` |
 | `docs/` | Machine-readable generated data (rules, heroes, monsters, summons) |
-| `site/` | Static odds calculator website (future) |
+| `site/` | Vue + Vuetify static site (GitHub Pages) |
 | `agent-sops/` | Vendored Agent SOPs; `.cursor/commands` junction points here |
 | `raw/` | Local-only source PDFs (**gitignored**) |
 
 ## Coding Workflow
 
 Use `/code-assist.sop` in Cursor for all coding tasks. See [CODEASSIST.md](CODEASSIST.md) for project-specific constraints.
+
+## Site Development
+
+```bash
+cd site
+npm install
+npm run dev
+npm run build
+```
+
+Live site: https://bashamer.github.io/judgement-eternal-champions-odds/
+
+Pushes to `main` deploy automatically via [`.github/workflows/pages.yml`](.github/workflows/pages.yml).
 
 ## Build and Run
 

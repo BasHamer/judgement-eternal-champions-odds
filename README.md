@@ -27,11 +27,21 @@ Outputs land in `docs/`:
 - `rules-min-context.md` — LLM-optimized combat rules subset
 - `heroes.md`, `monsters.md`, `summons.md` — collection stats and weapon profiles
 
+## Site
+
+```bash
+cd site
+npm install
+npm run dev
+```
+
+Live: https://bashamer.github.io/judgement-eternal-champions-odds/
+
 ## Project Layout
 
 - `tools/` — C# batch console apps
 - `docs/` — generated machine-readable data
-- `site/` — static website (future, GitHub Pages)
+- `site/` — Vue + Vuetify static website (GitHub Pages)
 - `agent-sops/` — vendored AI agent workflows
 
 See [AGENTS.md](AGENTS.md) for agent context and [CODEASSIST.md](CODEASSIST.md) for coding constraints.
