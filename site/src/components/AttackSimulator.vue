@@ -40,12 +40,16 @@ const thirdBasicAttack = ref(false)
 const dualWieldAttack = ref(false)
 const miscDiceModifier = ref(0)
 const simulationScope = ref('combined')
-const tryAgainReroll = ref(false)
 const cover = ref(false)
 const equippedArtefactId = ref(null)
 const comparisonMode = ref(false)
 const compareArtefactBId = ref('vorpal-blade')
 const compareArtefactCId = ref('armour-shredder')
+const maneuverEvCount = ref(0)
+const maneuverEvJudgements = ref(0)
+const maneuverExpectedValue = ref(0)
+const maneuverEvRequireMinDamage = ref(true)
+const maneuverEvOncePerTurn = ref(true)
 const minManeuvers = ref(0)
 const minJudgements = ref(0)
 const maneuverAttackIndex = ref(0)
@@ -129,9 +133,18 @@ watch([secondBasicAttack, thirdBasicAttack], () => {
   }
 })
 
-watch(simulationScope, (scope) => {
-  if (scope === 'combined') tryAgainReroll.value = false
-})
+const maneuverEvConfig = computed(() => ({
+  expectedValue: Number(maneuverExpectedValue.value) || 0,
+  minManeuvers: Number(maneuverEvCount.value) || 0,
+  minJudgements: Number(maneuverEvJudgements.value) || 0,
+  requireMinDamage: maneuverEvRequireMinDamage.value,
+  oncePerTurn: maneuverEvOncePerTurn.value,
+}))
+
+const maneuverEvActive = computed(() =>
+  maneuverEvConfig.value.expectedValue > 0
+  && (maneuverEvConfig.value.minManeuvers > 0 || maneuverEvConfig.value.minJudgements > 0),
+)
 
 const selectedWeapon = computed(() =>
   attackerWeapons.value.find(w => w.name === weaponName.value) ?? null,
@@ -157,9 +170,9 @@ const simParams = computed(() => {
     dualWieldAttack: dualWieldAttack.value,
     miscDiceModifier: Number(miscDiceModifier.value) || 0,
     simulationScope: simulationScope.value,
-    tryAgainReroll: tryAgainReroll.value,
     cover: cover.value,
     modifiers: equippedModifiers.value,
+    maneuverEv: maneuverEvConfig.value,
   }
 })
 
@@ -171,10 +184,6 @@ const effectiveAttackSequence = computed(() =>
   simParams.value
     ? resolveSimulationScope(simulationScope.value, fullAttackSequence.value)
     : [],
-)
-
-const canUseReroll = computed(() =>
-  simulationScope.value !== 'combined' && effectiveAttackSequence.value.length === 1,
 )
 
 const simulationScopeOptions = computed(() => {
@@ -296,24 +305,31 @@ const chartRows = computed(() => {
   }
 
   return Object.entries(simulation.value.distribution)
-    .map(([damage, count]) => ({
-      damage: Number(damage),
-      series: [{
+    .map(([damage, count]) => {
+      const d = Number(damage)
+      const comp = simulation.value.composition?.[d]
+        ?? { attackPct: 100, maneuverPct: 0 }
+      return {
+        damage: d,
         count: Number(count),
-        probability: simulation.value.probabilities[Number(damage)] ?? 0,
-        cumulative: simulation.value.cumulativeProbabilities[Number(damage)] ?? 0,
-        label: 'Damage',
-        color: 'primary',
-      }],
-    }))
+        probability: simulation.value.probabilities[d] ?? 0,
+        cumulative: simulation.value.cumulativeProbabilities[d] ?? 0,
+        attackPct: comp.attackPct,
+        maneuverPct: comp.maneuverPct,
+      }
+    })
     .sort((a, b) => a.damage - b.damage)
 })
 
-const maxBarCount = computed(() => {
-  let max = 1
+const maxBarProbability = computed(() => {
+  let max = 0.001
   for (const row of chartRows.value) {
-    for (const entry of row.series) {
-      max = Math.max(max, entry.count)
+    if (comparisonMode.value) {
+      for (const entry of row.series) {
+        max = Math.max(max, entry.probability)
+      }
+    } else {
+      max = Math.max(max, row.probability)
     }
   }
   return max
@@ -531,16 +547,66 @@ function resetTargetStats() {
               hide-details
             />
           </v-col>
+        </v-row>
 
-          <v-col cols="12" md="4">
-            <v-checkbox
-              v-model="tryAgainReroll"
-              label="Try Again (reroll any one die, optimal)"
+        <v-divider class="my-4" />
+
+        <p class="text-subtitle-2 mb-2">Manoeuvre expected value (damage sim)</p>
+        <v-row dense>
+          <v-col cols="6" md="3">
+            <v-text-field
+              v-model.number="maneuverEvCount"
+              label="Manoeuvre symbols"
+              type="number"
+              min="0"
+              max="3"
               hide-details
-              :disabled="!canUseReroll"
+            />
+          </v-col>
+          <v-col cols="6" md="3">
+            <v-text-field
+              v-model.number="maneuverEvJudgements"
+              label="Judgement (J) symbols"
+              type="number"
+              min="0"
+              max="3"
+              hide-details
+            />
+          </v-col>
+          <v-col cols="6" md="3">
+            <v-text-field
+              v-model.number="maneuverExpectedValue"
+              label="Expected value (0 = off)"
+              type="number"
+              min="0"
+              max="7"
+              hide-details
+            />
+          </v-col>
+          <v-col cols="6" md="3" class="d-flex flex-column justify-center">
+            <v-checkbox
+              v-model="maneuverEvOncePerTurn"
+              label="Once per turn"
+              hide-details
+              density="compact"
+            />
+            <v-checkbox
+              v-model="maneuverEvRequireMinDamage"
+              label="Require ≥1 weapon damage"
+              hide-details
+              density="compact"
             />
           </v-col>
         </v-row>
+        <p
+          v-if="maneuverEvActive"
+          class="text-body-2 text-medium-emphasis mb-0"
+        >
+          When manoeuvre + EV strictly beats pure damage, the sim takes that path
+          (ties stay pure). EV is not reduced by RES. Symbol cost: M = 1, J = 2,
+          strike hits = 1 each. On the manoeuvre path each J counts as 1 hit for
+          weapon tier (JJ + blanks = solid + EV).
+        </p>
 
         <v-divider class="my-4" />
 
@@ -650,6 +716,23 @@ function resetTargetStats() {
           </div>
         </div>
 
+        <div
+          v-if="maneuverEvActive && chartRows.length"
+          class="ev-legend mb-3"
+        >
+          <span class="ev-legend__item">
+            <span class="ev-legend__swatch ev-legend__swatch--attacks" />
+            Attacks
+          </span>
+          <span class="ev-legend__item">
+            <span class="ev-legend__swatch ev-legend__swatch--maneuvers" />
+            Manoeuvres
+          </span>
+          <span class="text-body-2 text-medium-emphasis">
+            Bar width = chance of that total; fill split = attack vs manoeuvre share of damage
+          </span>
+        </div>
+
         <div v-if="chartRows.length" class="damage-chart">
           <div
             v-for="row in chartRows"
@@ -661,9 +744,46 @@ function resetTargetStats() {
               class="damage-chart__bar-group"
               :class="{ 'damage-chart__bar-group--compare': comparisonMode }"
             >
+              <template v-if="comparisonMode">
+                <v-tooltip
+                  v-for="(entry, index) in row.series"
+                  :key="`${row.damage}-${index}`"
+                  location="top"
+                >
+                  <template #activator="{ props }">
+                    <div
+                      v-bind="props"
+                      class="damage-chart__bar-wrap"
+                    >
+                      <div
+                        class="damage-chart__bar-stack"
+                        :style="{ width: `${(entry.probability / maxBarProbability) * 100}%` }"
+                      >
+                        <div
+                          v-if="entry.attackPct > 0"
+                          class="damage-chart__bar"
+                          :class="`damage-chart__bar--${entry.color}`"
+                          :style="{ flex: entry.attackPct }"
+                        />
+                        <div
+                          v-if="entry.maneuverPct > 0"
+                          class="damage-chart__bar damage-chart__bar--maneuvers"
+                          :class="maneuverEvActive ? `damage-chart__bar--maneuvers-${entry.color}` : ''"
+                          :style="{ flex: entry.maneuverPct }"
+                        />
+                      </div>
+                    </div>
+                  </template>
+                  <span>
+                    {{ entry.label }} — {{ row.damage }} total:
+                    {{ (entry.probability * 100).toFixed(1) }}% of rolls,
+                    {{ entry.attackPct.toFixed(0) }}% attacks /
+                    {{ entry.maneuverPct.toFixed(0) }}% manoeuvres
+                  </span>
+                </v-tooltip>
+              </template>
               <v-tooltip
-                v-for="(entry, index) in row.series"
-                :key="`${row.damage}-${index}`"
+                v-else
                 location="top"
               >
                 <template #activator="{ props }">
@@ -672,21 +792,33 @@ function resetTargetStats() {
                     class="damage-chart__bar-wrap"
                   >
                     <div
-                      class="damage-chart__bar"
-                      :class="comparisonMode ? `damage-chart__bar--${entry.color}` : ''"
-                      :style="{ width: `${(entry.count / maxBarCount) * 100}%` }"
-                    />
+                      class="damage-chart__bar-stack"
+                      :style="{ width: `${(row.probability / maxBarProbability) * 100}%` }"
+                    >
+                      <div
+                        v-if="row.attackPct > 0"
+                        class="damage-chart__bar damage-chart__bar--attacks"
+                        :style="{ flex: row.attackPct }"
+                      />
+                      <div
+                        v-if="row.maneuverPct > 0"
+                        class="damage-chart__bar damage-chart__bar--maneuvers"
+                        :style="{ flex: row.maneuverPct }"
+                      />
+                    </div>
                   </div>
                 </template>
                 <span>
-                  {{ entry.label }} — {{ row.damage }}+ damage:
-                  {{ (entry.cumulative * 100).toFixed(1) }}%
+                  {{ row.damage }} total:
+                  {{ (row.probability * 100).toFixed(1) }}% of rolls,
+                  {{ row.attackPct.toFixed(0) }}% attacks /
+                  {{ row.maneuverPct.toFixed(0) }}% manoeuvres
                 </span>
               </v-tooltip>
             </div>
             <span class="damage-chart__pct">
               <template v-if="!comparisonMode">
-                {{ (row.series[0].probability * 100).toFixed(1) }}%
+                {{ (row.probability * 100).toFixed(1) }}%
               </template>
             </span>
           </div>
@@ -792,17 +924,41 @@ function resetTargetStats() {
   overflow: hidden;
 }
 
+.damage-chart__bar-stack {
+  display: flex;
+  height: 100%;
+  min-width: 2px;
+}
+
 .damage-chart__bar {
   height: 100%;
   min-width: 2px;
+  border-radius: 0;
+  transition: flex 0.15s ease;
+}
+
+.damage-chart__bar--attacks {
   background: rgb(var(--v-theme-primary));
-  border-radius: 2px;
-  transition: width 0.15s ease;
+}
+
+.damage-chart__bar--maneuvers {
+  background: rgb(var(--v-theme-secondary));
+  opacity: 0.85;
 }
 
 .damage-chart__bar--primary { background: rgb(var(--v-theme-primary)); }
 .damage-chart__bar--success { background: rgb(var(--v-theme-success)); }
 .damage-chart__bar--warning { background: rgb(var(--v-theme-warning)); }
+
+.damage-chart__bar--maneuvers-primary {
+  background: color-mix(in srgb, rgb(var(--v-theme-primary)) 45%, rgb(var(--v-theme-secondary)));
+}
+.damage-chart__bar--maneuvers-success {
+  background: color-mix(in srgb, rgb(var(--v-theme-success)) 45%, rgb(var(--v-theme-secondary)));
+}
+.damage-chart__bar--maneuvers-warning {
+  background: color-mix(in srgb, rgb(var(--v-theme-warning)) 45%, rgb(var(--v-theme-secondary)));
+}
 
 .damage-chart__pct {
   font-size: 0.75rem;
@@ -869,4 +1025,26 @@ function resetTargetStats() {
 .comparison-legend__swatch--primary { background: rgb(var(--v-theme-primary)); }
 .comparison-legend__swatch--success { background: rgb(var(--v-theme-success)); }
 .comparison-legend__swatch--warning { background: rgb(var(--v-theme-warning)); }
+
+.ev-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 0.875rem;
+}
+
+.ev-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ev-legend__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.ev-legend__swatch--attacks { background: rgb(var(--v-theme-primary)); }
+.ev-legend__swatch--maneuvers { background: rgb(var(--v-theme-secondary)); opacity: 0.85; }
 </style>

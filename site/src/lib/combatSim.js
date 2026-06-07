@@ -19,6 +19,21 @@
  *   label: string,
  * }} AttackStep */
 
+/** @typedef {{
+ *   expectedValue?: number,
+ *   minManeuvers?: number,
+ *   minJudgements?: number,
+ *   requireMinDamage?: boolean,
+ *   oncePerTurn?: boolean,
+ * }} ManeuverEvConfig */
+
+/** @typedef {{
+ *   weaponDamage: number,
+ *   expectedValue: number,
+ *   total: number,
+ *   usedManeuverPath: boolean,
+ * }} AttackDamageOutcome */
+
 /** @type {DieFace[]} */
 export const JUDGEMENT_DIE_FACES = [
   { hits: 3, maneuver: 0 },
@@ -108,6 +123,76 @@ export function enumerateDiceChoices(rolls, chooseCount) {
 }
 
 /**
+ * How many dice to consider selecting from a pool (rules: all dice if pool ≤ 3, else 1–3).
+ * @param {number} poolSize
+ * @returns {number[]}
+ */
+export function enumerationChoiceCounts(poolSize) {
+  if (poolSize <= 0) return []
+  if (poolSize <= 3) return [poolSize]
+  return [1, 2, 3]
+}
+
+/**
+ * @param {DieFace[]} rolls
+ * @returns {DieFace[][]}
+ */
+export function enumerateAllDiceChoices(rolls) {
+  /** @type {DieFace[][]} */
+  const choices = []
+  for (const k of enumerationChoiceCounts(rolls.length)) {
+    choices.push(...enumerateDiceChoices(rolls, k))
+  }
+  return choices
+}
+
+/**
+ * Manoeuvre-symbol credit on chosen dice for cost checks. M = 1, J = 2, strike hit
+ * symbols = 1 each (same dice still contribute those hits to attack damage).
+ * @param {DieFace[]} chosen
+ * @returns {number}
+ */
+export function maneuverSymbolCredit(chosen) {
+  const summary = summarizeChosenDice(chosen)
+  const strikeHitSymbols = chosen.reduce(
+    (acc, die) => acc + (die.hits >= 3 ? 0 : die.hits),
+    0,
+  )
+  return summary.maneuvers + summary.judgements * 2 + strikeHitSymbols
+}
+
+/**
+ * @param {DieFace[]} chosen
+ * @param {ManeuverEvConfig} config
+ * @returns {boolean}
+ */
+export function meetsManeuverEvSymbolRequirements(chosen, config) {
+  const normalized = normalizeManeuverEvConfig(config)
+  const summary = summarizeChosenDice(chosen)
+  if (normalized.minManeuvers > 0 && maneuverSymbolCredit(chosen) < normalized.minManeuvers) {
+    return false
+  }
+  if (normalized.minJudgements > 0 && summary.judgements < normalized.minJudgements) {
+    return false
+  }
+  return normalized.minManeuvers > 0 || normalized.minJudgements > 0
+}
+
+/**
+ * @param {DieFace[]} chosen
+ * @param {{ minManeuvers?: number, minJudgements?: number }} requirements
+ * @returns {boolean}
+ */
+export function meetsManeuverSymbolRequirements(chosen, requirements) {
+  const summary = summarizeChosenDice(chosen)
+  const minManeuvers = requirements.minManeuvers ?? 0
+  const minJudgements = requirements.minJudgements ?? 0
+  if (minManeuvers > 0 && maneuverSymbolCredit(chosen) < minManeuvers) return false
+  if (minJudgements > 0 && summary.judgements < minJudgements) return false
+  return minManeuvers > 0 || minJudgements > 0
+}
+
+/**
  * @param {DieFace[]} chosen
  * @returns {{ hits: number, maneuvers: number, judgements: number }}
  */
@@ -128,8 +213,7 @@ export function summarizeChosenDice(chosen) {
  * @returns {DieFace[]}
  */
 export function chooseBestDiceForDamage(rolls) {
-  const chooseCount = Math.min(3, rolls.length)
-  const choices = enumerateDiceChoices(rolls, chooseCount)
+  const choices = enumerateAllDiceChoices(rolls)
   if (choices.length === 0) return []
 
   let best = choices[0]
@@ -142,6 +226,120 @@ export function chooseBestDiceForDamage(rolls) {
     }
   }
   return best
+}
+
+export const EMPTY_MANEUVER_EV = {
+  expectedValue: 0,
+  minManeuvers: 0,
+  minJudgements: 0,
+  requireMinDamage: true,
+  oncePerTurn: true,
+}
+
+/**
+ * @param {ManeuverEvConfig | null | undefined} config
+ * @returns {ManeuverEvConfig}
+ */
+export function normalizeManeuverEvConfig(config) {
+  return { ...EMPTY_MANEUVER_EV, ...config }
+}
+
+/**
+ * @param {ManeuverEvConfig} config
+ * @returns {boolean}
+ */
+export function isManeuverEvActive(config) {
+  const normalized = normalizeManeuverEvConfig(config)
+  return normalized.expectedValue > 0
+    && (normalized.minManeuvers > 0 || normalized.minJudgements > 0)
+}
+
+/**
+ * Best dice choice that meets manoeuvre/J requirements and maximizes weapon damage + EV.
+ * EV is flat (not reduced by RES); weapon damage is resolved normally.
+ * @param {DieFace[]} rolls
+ * @param {{ glance: number, solid: number, crit: number }} weapon
+ * @param {number} targetRes
+ * @param {SimModifiers} modifiers
+ * @param {ManeuverEvConfig} config
+ * @returns {AttackDamageOutcome | null}
+ */
+export function chooseBestManeuverEvOutcome(rolls, weapon, targetRes, modifiers, config) {
+  const normalized = normalizeManeuverEvConfig(config)
+  if (!isManeuverEvActive(normalized)) return null
+
+  const minWeaponDamage = normalized.requireMinDamage ? 1 : 0
+  const choices = enumerateAllDiceChoices(rolls)
+
+  /** @type {AttackDamageOutcome | null} */
+  let best = null
+
+  for (const choice of choices) {
+    const weaponDamage = resolveDamage(choice, weapon, targetRes, modifiers, { maneuverPath: true })
+    if (weaponDamage < minWeaponDamage) continue
+    if (!meetsManeuverEvSymbolRequirements(choice, normalized)) continue
+
+    const total = weaponDamage + normalized.expectedValue
+    if (!best || total > best.total || (total === best.total && weaponDamage > best.weaponDamage)) {
+      best = {
+        weaponDamage,
+        expectedValue: normalized.expectedValue,
+        total,
+        usedManeuverPath: true,
+      }
+    }
+  }
+
+  return best
+}
+
+/**
+ * @param {DieFace[]} rolls
+ * @param {{ glance: number, solid: number, crit: number }} weapon
+ * @param {number} targetRes
+ * @param {SimModifiers} modifiers
+ * @returns {AttackDamageOutcome}
+ */
+export function choosePureDamageOutcome(rolls, weapon, targetRes, modifiers) {
+  const chosen = chooseBestDiceForDamage(rolls)
+  const weaponDamage = resolveDamage(chosen, weapon, targetRes, modifiers)
+  return {
+    weaponDamage,
+    expectedValue: 0,
+    total: weaponDamage,
+    usedManeuverPath: false,
+  }
+}
+
+/**
+ * Pick pure damage unless manoeuvre+EV strictly beats it (ties stay pure).
+ * @param {DieFace[]} rolls
+ * @param {{ glance: number, solid: number, crit: number }} weapon
+ * @param {number} targetRes
+ * @param {SimModifiers} modifiers
+ * @param {ManeuverEvConfig} config
+ * @param {boolean} [canUseManeuverEv=true]
+ * @returns {AttackDamageOutcome}
+ */
+export function resolveAttackDamageWithManeuverEv(
+  rolls,
+  weapon,
+  targetRes,
+  modifiers,
+  config,
+  canUseManeuverEv = true,
+) {
+  const pure = choosePureDamageOutcome(rolls, weapon, targetRes, modifiers)
+  if (!canUseManeuverEv || !isManeuverEvActive(config)) {
+    return pure
+  }
+
+  const maneuver = chooseBestManeuverEvOutcome(rolls, weapon, targetRes, modifiers, config)
+  if (!maneuver || maneuver.total <= pure.total) {
+    return pure
+  }
+
+  return maneuver
 }
 
 /**
@@ -240,18 +438,13 @@ export function canMeetManeuverRequirements(
   requirements,
 ) {
   const minDamage = requirements.minDamage ?? 1
-  const minManeuvers = requirements.minManeuvers ?? 0
-  const minJudgements = requirements.minJudgements ?? 0
-  const chooseCount = Math.min(3, rolls.length)
-  const choices = enumerateDiceChoices(rolls, chooseCount)
+  const choices = enumerateAllDiceChoices(rolls)
 
   for (const choice of choices) {
-    const damage = resolveDamage(choice, weapon, targetRes, modifiers)
-    const summary = summarizeChosenDice(choice)
+    const damage = resolveDamage(choice, weapon, targetRes, modifiers, { maneuverPath: true })
     if (
       damage >= minDamage
-      && summary.maneuvers >= minManeuvers
-      && summary.judgements >= minJudgements
+      && meetsManeuverSymbolRequirements(choice, requirements)
     ) {
       return true
     }
@@ -286,15 +479,39 @@ export function weaponDamageForTier(weapon, tier) {
 }
 
 /**
+ * Hit symbols used for glance/solid/crit tier. On the manoeuvre+EV path each J
+ * contributes 1 hit (solid for JJ) while still paying manoeuvre/J symbol cost.
+ * @param {DieFace[]} chosen
+ * @param {boolean} [maneuverPath=false]
+ * @returns {number}
+ */
+export function hitSymbolsForDamageTier(chosen, maneuverPath = false) {
+  if (!maneuverPath) {
+    return summarizeChosenDice(chosen).hits
+  }
+  return chosen.reduce(
+    (acc, die) => acc + (die.hits >= 3 ? 1 : die.hits),
+    0,
+  )
+}
+
+/**
  * @param {DieFace[]} chosen
  * @param {{ glance: number, solid: number, crit: number }} weapon
  * @param {number} targetRes
  * @param {SimModifiers} [modifiers]
+ * @param {{ maneuverPath?: boolean }} [options]
  * @returns {number}
  */
-export function resolveDamage(chosen, weapon, targetRes, modifiers = EMPTY_MODIFIERS) {
-  const summary = summarizeChosenDice(chosen)
-  const tier = hitsToTier(summary.hits)
+export function resolveDamage(
+  chosen,
+  weapon,
+  targetRes,
+  modifiers = EMPTY_MODIFIERS,
+  options = {},
+) {
+  const hitCount = hitSymbolsForDamageTier(chosen, options.maneuverPath ?? false)
+  const tier = hitsToTier(hitCount)
   const raw = weaponDamageForTier(weapon, tier)
   const effectiveRes = Math.max(0, targetRes - (modifiers.armourPiercing ?? 0))
   const base = Math.max(0, raw - effectiveRes)
@@ -424,7 +641,7 @@ export function resolveSimulationScope(simulationScope, attackSequence) {
  * @param {AttackStep} attackStep
  * @returns {number}
  */
-export function rollSingleAttackDamage(params, attackStep) {
+export function rollSingleAttackDamage(params, attackStep, maneuverEvConfig = EMPTY_MANEUVER_EV, canUseManeuverEv = true) {
   const modifiers = normalizeModifiers(params.modifiers)
   const poolSize = calculateDicePoolSize({
     ...params,
@@ -432,16 +649,15 @@ export function rollSingleAttackDamage(params, attackStep) {
     dualWieldPenalty: attackStep.dualWieldPenalty,
     modifiers,
   })
-  let rolls = rollDicePool(poolSize)
-  rolls = applyOptionalRerollForDamage(
+  const rolls = rollDicePool(poolSize)
+  return resolveAttackDamageWithManeuverEv(
     rolls,
-    params.tryAgainReroll,
     params.weapon,
     params.target.stats.res ?? 0,
     modifiers,
+    maneuverEvConfig,
+    canUseManeuverEv,
   )
-  const chosen = chooseBestDiceForDamage(rolls)
-  return resolveDamage(chosen, params.weapon, params.target.stats.res ?? 0, modifiers)
 }
 
 /**
@@ -450,6 +666,7 @@ export function rollSingleAttackDamage(params, attackStep) {
  */
 export function runMonteCarloSimulation(params, iterations = 1000) {
   const modifiers = normalizeModifiers(params.modifiers)
+  const maneuverEvConfig = normalizeManeuverEvConfig(params.maneuverEv)
   const fullSequence = buildAttackSequence(params)
   const attackSequence = resolveSimulationScope(params.simulationScope ?? 'combined', fullSequence)
   const poolSize = attackSequence.length
@@ -462,13 +679,34 @@ export function runMonteCarloSimulation(params, iterations = 1000) {
     : 0
   /** @type {Record<number, number>} */
   const distribution = {}
+  /** @type {Record<number, number>} */
+  const sumWeaponAt = {}
+  /** @type {Record<number, number>} */
+  const sumManeuverAt = {}
 
   for (let i = 0; i < iterations; i++) {
-    let totalDamage = 0
+    let totalWeapon = 0
+    let totalManeuver = 0
+    let usedEvThisTurn = false
     for (const attackStep of attackSequence) {
-      totalDamage += rollSingleAttackDamage({ ...params, modifiers }, attackStep)
+      const oncePerTurn = maneuverEvConfig.oncePerTurn
+      const canUseManeuverEv = !oncePerTurn || !usedEvThisTurn
+      const outcome = rollSingleAttackDamage(
+        { ...params, modifiers },
+        attackStep,
+        maneuverEvConfig,
+        canUseManeuverEv,
+      )
+      if (outcome.usedManeuverPath) {
+        usedEvThisTurn = true
+      }
+      totalWeapon += outcome.weaponDamage
+      totalManeuver += outcome.expectedValue
     }
+    const totalDamage = totalWeapon + totalManeuver
     distribution[totalDamage] = (distribution[totalDamage] ?? 0) + 1
+    sumWeaponAt[totalDamage] = (sumWeaponAt[totalDamage] ?? 0) + totalWeapon
+    sumManeuverAt[totalDamage] = (sumManeuverAt[totalDamage] ?? 0) + totalManeuver
   }
 
   return finalizeSimulationResult({
@@ -476,6 +714,8 @@ export function runMonteCarloSimulation(params, iterations = 1000) {
     attackSequence,
     params: { ...params, modifiers },
     distribution,
+    sumWeaponAt,
+    sumManeuverAt,
     iterations,
   })
 }
@@ -536,15 +776,7 @@ export function runManeuverSimulation(params, requirements, iterations = 1000) {
   }
 
   for (let i = 0; i < iterations; i++) {
-    let rolls = rollDicePool(poolSize)
-    rolls = applyOptionalRerollForManeuvers(
-      rolls,
-      params.tryAgainReroll,
-      params.weapon,
-      params.target.stats.res ?? 0,
-      modifiers,
-      maneuverRequirements,
-    )
+    const rolls = rollDicePool(poolSize)
     if (canMeetManeuverRequirements(
       rolls,
       params.weapon,
@@ -571,11 +803,47 @@ export function runManeuverSimulation(params, requirements, iterations = 1000) {
  * @param {object} input
  * @returns {object}
  */
-function finalizeSimulationResult({ poolSize, attackSequence, params, distribution, iterations }) {
+/**
+ * @param {number} count
+ * @param {number} totalDamage
+ * @param {number} sumWeapon
+ * @param {number} sumManeuver
+ * @returns {{ attackPct: number, maneuverPct: number }}
+ */
+export function damageCompositionAtBucket(count, totalDamage, sumWeapon, sumManeuver) {
+  const damagePoints = count * totalDamage
+  if (count <= 0 || damagePoints <= 0) {
+    return { attackPct: 100, maneuverPct: 0 }
+  }
+  return {
+    attackPct: (sumWeapon / damagePoints) * 100,
+    maneuverPct: (sumManeuver / damagePoints) * 100,
+  }
+}
+
+function finalizeSimulationResult({
+  poolSize,
+  attackSequence,
+  params,
+  distribution,
+  sumWeaponAt = {},
+  sumManeuverAt = {},
+  iterations,
+}) {
   /** @type {Record<number, number>} */
   const probabilities = {}
+  /** @type {Record<number, { attackPct: number, maneuverPct: number }>} */
+  const composition = {}
+
   for (const [damage, count] of Object.entries(distribution)) {
-    probabilities[Number(damage)] = count / iterations
+    const d = Number(damage)
+    probabilities[d] = count / iterations
+    composition[d] = damageCompositionAtBucket(
+      count,
+      d,
+      sumWeaponAt[d] ?? 0,
+      sumManeuverAt[d] ?? 0,
+    )
   }
 
   return {
@@ -590,6 +858,9 @@ function finalizeSimulationResult({ poolSize, attackSequence, params, distributi
     ),
     attackLabels: attackSequence.map(step => step.label),
     distribution,
+    sumWeaponAt,
+    sumManeuverAt,
+    composition,
     probabilities,
     cumulativeProbabilities: cumulativeProbabilities(probabilities),
   }
@@ -637,11 +908,23 @@ export function mergeComparisonDistributions(results) {
 
   return [...damageValues].sort((a, b) => a - b).map(damage => ({
     damage,
-    series: results.map(result => ({
-      count: result.distribution[damage] ?? 0,
-      probability: result.probabilities[damage] ?? 0,
-      cumulative: result.cumulativeProbabilities[damage] ?? 0,
-    })),
+    series: results.map(result => {
+      const count = result.distribution[damage] ?? 0
+      const comp = result.composition?.[damage]
+        ?? damageCompositionAtBucket(
+          count,
+          damage,
+          result.sumWeaponAt?.[damage] ?? 0,
+          result.sumManeuverAt?.[damage] ?? 0,
+        )
+      return {
+        count,
+        attackPct: comp.attackPct,
+        maneuverPct: comp.maneuverPct,
+        probability: result.probabilities[damage] ?? 0,
+        cumulative: result.cumulativeProbabilities[damage] ?? 0,
+      }
+    }),
   }))
 }
 
