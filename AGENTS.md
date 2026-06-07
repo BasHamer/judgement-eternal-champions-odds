@@ -28,6 +28,7 @@ Use `/code-assist.sop` in Cursor for all coding tasks. See [CODEASSIST.md](CODEA
 ```bash
 cd site
 npm install
+npm test
 npm run dev
 npm run build
 ```
