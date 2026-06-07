@@ -360,6 +360,22 @@ function resetTargetStats() {
 
 <template>
   <v-container max-width="960">
+    <v-alert
+      type="warning"
+      variant="tonal"
+      class="mb-4"
+      title="Stats may be out of date"
+    >
+      Hero, monster, and weapon statistics on this site are scraped periodically and may not
+      reflect the latest patch. Always check
+      <a
+        href="https://www.hallofeternalchampions.com/"
+        target="_blank"
+        rel="noopener noreferrer"
+      >Hall of Eternal Champions</a>
+      for current numbers.
+    </v-alert>
+
     <v-card title="Attack Damage Simulator">
       <v-card-subtitle>
         Monte Carlo simulation ({{ SIM_ITERATIONS }} rolls) — combined basic attack damage
