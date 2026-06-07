@@ -14,7 +14,7 @@ import {
   runMonteCarloSimulation,
 } from '../lib/combatSim.js'
 
-const SIM_ITERATIONS = 1000
+const SIM_ITERATIONS = 10000
 
 const STAT_LABELS = [
   { key: 'mov', label: 'MOV' },
