@@ -29,7 +29,9 @@ public sealed record HeroDetail(
     [property: JsonPropertyName("health_lvl2")] int HealthLvl2,
     [property: JsonPropertyName("health_lvl3")] int HealthLvl3,
     [property: JsonPropertyName("test_realm")] bool TestRealm,
-    [property: JsonPropertyName("weapons")] List<WeaponProfile>? Weapons);
+    [property: JsonPropertyName("weapons")] List<WeaponProfile>? Weapons,
+    [property: JsonPropertyName("innate_abilities")] JsonElement? InnateAbilities,
+    [property: JsonPropertyName("heroes_innate_abilities")] JsonElement? HeroesInnateAbilities);
 
 public sealed record MonsterDetail(
     [property: JsonPropertyName("slug")] string Slug,
@@ -62,3 +64,21 @@ public sealed record SummonDetail(
 
 public sealed record RaceRef(
     [property: JsonPropertyName("name")] string Name);
+
+public sealed record ArtefactSummary(
+    [property: JsonPropertyName("slug")] string Slug,
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("cost")] string Cost,
+    [property: JsonPropertyName("category")] string Category,
+    [property: JsonPropertyName("description")] string Description);
+
+public sealed record ArtefactSimEffects(
+    int MelBonus = 0,
+    int MagBonus = 0,
+    int RngBonus = 0,
+    int AgiBonus = 0,
+    int ResBonus = 0,
+    int ArmourPiercing = 0,
+    int DamageBonus = 0,
+    int ExtraDice = 0);

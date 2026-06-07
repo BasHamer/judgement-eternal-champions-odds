@@ -5,11 +5,13 @@ using HoecDownloader.Writers;
 bool heroesOnly = args.Contains("--heroes-only");
 bool monstersOnly = args.Contains("--monsters-only");
 bool summonsOnly = args.Contains("--summons-only");
+bool artefactsOnly = args.Contains("--artefacts-only");
 
-bool downloadAll = !heroesOnly && !monstersOnly && !summonsOnly;
+bool downloadAll = !heroesOnly && !monstersOnly && !summonsOnly && !artefactsOnly;
 bool downloadHeroes = downloadAll || heroesOnly;
 bool downloadMonsters = downloadAll || monstersOnly;
 bool downloadSummons = downloadAll || summonsOnly;
+bool downloadArtefacts = downloadAll || artefactsOnly;
 
 string outputDir = GetArgValue(args, "--output-dir") ?? Path.Combine(FindRepoRoot(), "docs");
 Directory.CreateDirectory(outputDir);
@@ -41,6 +43,20 @@ if (downloadSummons)
     string path = Path.Combine(outputDir, "summons.md");
     await File.WriteAllTextAsync(path, MarkdownWriters.WriteSummons(summons));
     Console.WriteLine($"Wrote {summons.Count} summons to {path}");
+}
+
+if (downloadArtefacts)
+{
+    Console.WriteLine("Downloading artefacts...");
+    List<ArtefactSummary>? artefacts = await client.GetApiAsync<List<ArtefactSummary>>("/api/artefacts");
+    if (artefacts is null || artefacts.Count == 0)
+    {
+        throw new InvalidOperationException("No artefacts returned from /api/artefacts.");
+    }
+
+    string path = Path.Combine(outputDir, "artefacts.md");
+    await File.WriteAllTextAsync(path, MarkdownWriters.WriteArtefacts(artefacts));
+    Console.WriteLine($"Wrote {artefacts.Count} artefacts to {path}");
 }
 
 return 0;

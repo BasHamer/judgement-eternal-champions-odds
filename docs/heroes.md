@@ -1,6 +1,6 @@
 ---
 source: https://www.hallofeternalchampions.com/api/heroes
-generated_at: 2026-06-07T15:38:20.8879992Z
+generated_at: 2026-06-07T17:07:45.3295374Z
 hero_count: 60
 ---
 
@@ -9,6 +9,7 @@ hero_count: 60
 ## Abhothas (abhothas)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -35,6 +36,7 @@ test_realm: false
 ## Allandir (allandir)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -61,6 +63,7 @@ test_realm: false
 ## Aria (aria)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -87,6 +90,7 @@ test_realm: false
 ## Asbrand (asbrand)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -113,6 +117,7 @@ test_realm: false
 ## Aschell (aschell)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -139,6 +144,7 @@ test_realm: false
 ## Bale (bale)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -164,6 +170,7 @@ test_realm: false
 ## Barnascus (barnascus)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -190,6 +197,7 @@ test_realm: false
 ## Bastian (bastian)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -216,6 +224,7 @@ test_realm: false
 ## Brok (brok)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -241,6 +250,7 @@ test_realm: false
 ## Carva (carva)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -267,6 +277,8 @@ test_realm: false
 ## Cradol (cradol)
 
 test_realm: false
+dual_wield: true
+dual_wield_name: Dual Wield (Tomahawk)
 
 | Stat | Value |
 |------|-------|
@@ -292,6 +304,7 @@ test_realm: false
 ## Dakkar (dakkar)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -317,6 +330,7 @@ test_realm: false
 ## Doenregar (doenregar)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -342,6 +356,8 @@ test_realm: false
 ## Drelgoth (drelgoth)
 
 test_realm: false
+dual_wield: true
+dual_wield_name: Dual Wield (Axe)
 
 | Stat | Value |
 |------|-------|
@@ -367,6 +383,7 @@ test_realm: false
 ## Fazeal (fazeal)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -392,6 +409,7 @@ test_realm: false
 ## Gendris (gendris)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -418,6 +436,7 @@ test_realm: false
 ## Gonsoku (gonsoku)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -443,6 +462,7 @@ test_realm: false
 ## Grael (grael)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -468,6 +488,7 @@ test_realm: false
 ## Haksa (haksa)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -494,6 +515,7 @@ test_realm: false
 ## Isabel (isabel)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -519,6 +541,7 @@ test_realm: false
 ## Istariel (istariel)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -544,6 +567,7 @@ test_realm: false
 ## Jaegar (jaegar)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -570,6 +594,7 @@ test_realm: false
 ## Jarl (jarl)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -595,6 +620,7 @@ test_realm: false
 ## Kain (kain)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -621,6 +647,7 @@ test_realm: false
 ## Kedt (kedt)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -647,6 +674,7 @@ test_realm: false
 ## Kogan (kogan)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -673,6 +701,7 @@ test_realm: false
 ## Kruul (kruul)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -699,6 +728,7 @@ test_realm: false
 ## Kvarto (kvarto)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -725,6 +755,7 @@ test_realm: false
 ## Loribela (loribela)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -751,6 +782,7 @@ test_realm: false
 ## Lugdrug (lugdrug)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -777,6 +809,7 @@ test_realm: false
 ## Lyra (lyra)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -803,6 +836,7 @@ test_realm: false
 ## Maltique (maltique)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -828,6 +862,7 @@ test_realm: false
 ## Marcus (marcus)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -854,6 +889,7 @@ test_realm: false
 ## Masuzi (masuzi)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -880,6 +916,7 @@ test_realm: false
 ## Naias (naias)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -905,6 +942,8 @@ test_realm: false
 ## Nephenee (nephenee)
 
 test_realm: false
+dual_wield: true
+dual_wield_name: Dual Wield (Laser Blade)
 
 | Stat | Value |
 |------|-------|
@@ -930,6 +969,7 @@ test_realm: false
 ## Onkura (onkura)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -955,6 +995,7 @@ test_realm: false
 ## Piper (piper)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -981,6 +1022,7 @@ test_realm: false
 ## Rakkir (rakkir)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -1006,6 +1048,8 @@ test_realm: false
 ## Ramona (ramona)
 
 test_realm: false
+dual_wield: true
+dual_wield_name: Dual Wield (Claws)
 
 | Stat | Value |
 |------|-------|
@@ -1031,6 +1075,7 @@ test_realm: false
 ## Ravenos (ravenos)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -1056,6 +1101,7 @@ test_realm: false
 ## Saiyin (saiyin)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -1081,6 +1127,7 @@ test_realm: false
 ## Sarna (sarna)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -1106,6 +1153,7 @@ test_realm: false
 ## Sharn (sharn)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -1132,6 +1180,8 @@ test_realm: false
 ## Skoll (skoll)
 
 test_realm: false
+dual_wield: true
+dual_wield_name: Dual Wield (Brute Axe)
 
 | Stat | Value |
 |------|-------|
@@ -1158,6 +1208,7 @@ test_realm: false
 ## Skye (skye)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -1183,6 +1234,7 @@ test_realm: false
 ## Styx (styx)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -1209,6 +1261,7 @@ test_realm: false
 ## Svetlana (svetlana)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -1235,6 +1288,7 @@ test_realm: false
 ## Thorgar (thorgar)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -1260,6 +1314,7 @@ test_realm: false
 ## Thrommel (thrommel)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -1285,6 +1340,7 @@ test_realm: false
 ## Urvexis (urvexis)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -1310,6 +1366,7 @@ test_realm: false
 ## Viktor (viktor)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -1335,6 +1392,7 @@ test_realm: false
 ## Xyvera (xyvera)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -1360,6 +1418,7 @@ test_realm: false
 ## Yasmin (yasmin)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -1386,6 +1445,7 @@ test_realm: false
 ## Yorgawth (yorgawth)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -1411,6 +1471,7 @@ test_realm: false
 ## Zaffen (zaffen)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -1437,6 +1498,7 @@ test_realm: false
 ## Zaron (zaron)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -1463,6 +1525,7 @@ test_realm: false
 ## Zendala (zendala)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -1488,6 +1551,7 @@ test_realm: false
 ## Zhim'gigrak (zhimgigrak)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|
@@ -1513,6 +1577,7 @@ test_realm: false
 ## Zhonyja (zhonyja)
 
 test_realm: false
+dual_wield: false
 
 | Stat | Value |
 |------|-------|

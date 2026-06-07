@@ -1,5 +1,24 @@
 /** @typedef {{ hits: number, maneuver: number }} DieFace */
 
+/** @typedef {{
+ *   melBonus?: number,
+ *   magBonus?: number,
+ *   rngBonus?: number,
+ *   agiBonus?: number,
+ *   resBonus?: number,
+ *   armourPiercing?: number,
+ *   damageBonus?: number,
+ *   extraDice?: number,
+ * }} SimModifiers */
+
+/** @typedef {{
+ *   kind: 'basic' | 'dualWield',
+ *   index: number,
+ *   chargeEligible: boolean,
+ *   dualWieldPenalty: boolean,
+ *   label: string,
+ * }} AttackStep */
+
 /** @type {DieFace[]} */
 export const JUDGEMENT_DIE_FACES = [
   { hits: 3, maneuver: 0 },
@@ -10,6 +29,49 @@ export const JUDGEMENT_DIE_FACES = [
   { hits: 0, maneuver: 0 },
 ]
 
+export const EMPTY_MODIFIERS = {
+  melBonus: 0,
+  magBonus: 0,
+  rngBonus: 0,
+  agiBonus: 0,
+  resBonus: 0,
+  armourPiercing: 0,
+  damageBonus: 0,
+  extraDice: 0,
+}
+
+/**
+ * @param {SimModifiers | null | undefined} modifiers
+ * @returns {SimModifiers}
+ */
+export function normalizeModifiers(modifiers) {
+  return { ...EMPTY_MODIFIERS, ...modifiers }
+}
+
+/**
+ * @param {Record<string, number|null>} stats
+ * @param {SimModifiers} modifiers
+ * @returns {Record<string, number|null>}
+ */
+export function applyStatModifiers(stats, modifiers) {
+  return {
+    ...stats,
+    mel: (stats.mel ?? 0) + modifiers.melBonus,
+    mag: (stats.mag ?? 0) + modifiers.magBonus,
+    rng: (stats.rng ?? 0) + modifiers.rngBonus,
+    agi: (stats.agi ?? 0) + modifiers.agiBonus,
+    res: (stats.res ?? 0) + modifiers.resBonus,
+  }
+}
+
+/**
+ * @returns {DieFace}
+ */
+export function rollSingleDie() {
+  const index = Math.floor(Math.random() * JUDGEMENT_DIE_FACES.length)
+  return JUDGEMENT_DIE_FACES[index]
+}
+
 /**
  * @param {number} poolSize
  * @returns {DieFace[]}
@@ -17,10 +79,47 @@ export const JUDGEMENT_DIE_FACES = [
 export function rollDicePool(poolSize) {
   const rolls = []
   for (let i = 0; i < poolSize; i++) {
-    const index = Math.floor(Math.random() * JUDGEMENT_DIE_FACES.length)
-    rolls.push(JUDGEMENT_DIE_FACES[index])
+    rolls.push(rollSingleDie())
   }
   return rolls
+}
+
+/**
+ * @param {DieFace[]} rolls
+ * @param {number} chooseCount
+ * @returns {DieFace[][]}
+ */
+export function enumerateDiceChoices(rolls, chooseCount) {
+  const k = Math.min(chooseCount, rolls.length)
+  if (k <= 0) return []
+
+  /** @param {number} start @param {number} left @param {DieFace[]} picked */
+  function build(start, left, picked) {
+    if (left === 0) return [picked]
+    /** @type {DieFace[][]} */
+    const results = []
+    for (let i = start; i <= rolls.length - left; i++) {
+      results.push(...build(i + 1, left - 1, [...picked, rolls[i]]))
+    }
+    return results
+  }
+
+  return build(0, k, [])
+}
+
+/**
+ * @param {DieFace[]} chosen
+ * @returns {{ hits: number, maneuvers: number, judgements: number }}
+ */
+export function summarizeChosenDice(chosen) {
+  return chosen.reduce(
+    (acc, die) => ({
+      hits: acc.hits + die.hits,
+      maneuvers: acc.maneuvers + die.maneuver,
+      judgements: acc.judgements + (die.hits >= 3 ? 1 : 0),
+    }),
+    { hits: 0, maneuvers: 0, judgements: 0 },
+  )
 }
 
 /**
@@ -29,8 +128,136 @@ export function rollDicePool(poolSize) {
  * @returns {DieFace[]}
  */
 export function chooseBestDiceForDamage(rolls) {
-  const sorted = [...rolls].sort((a, b) => b.hits - a.hits)
-  return sorted.slice(0, Math.min(3, sorted.length))
+  const chooseCount = Math.min(3, rolls.length)
+  const choices = enumerateDiceChoices(rolls, chooseCount)
+  if (choices.length === 0) return []
+
+  let best = choices[0]
+  let bestHits = -1
+  for (const choice of choices) {
+    const hits = summarizeChosenDice(choice).hits
+    if (hits > bestHits) {
+      bestHits = hits
+      best = choice
+    }
+  }
+  return best
+}
+
+/**
+ * @param {DieFace[]} rolls
+ * @param {{ glance: number, solid: number, crit: number }} weapon
+ * @param {number} targetRes
+ * @param {SimModifiers} modifiers
+ * @returns {number}
+ */
+export function maxDamageFromRolls(rolls, weapon, targetRes, modifiers) {
+  const chosen = chooseBestDiceForDamage(rolls)
+  return resolveDamage(chosen, weapon, targetRes, modifiers)
+}
+
+/**
+ * @param {DieFace[]} rolls
+ * @param {boolean} reroll
+ * @param {{ glance: number, solid: number, crit: number }} weapon
+ * @param {number} targetRes
+ * @param {SimModifiers} modifiers
+ * @returns {DieFace[]}
+ */
+export function applyOptionalRerollForDamage(rolls, reroll, weapon, targetRes, modifiers) {
+  if (!reroll || rolls.length === 0) return rolls
+
+  let bestRolls = rolls
+  let bestDamage = maxDamageFromRolls(rolls, weapon, targetRes, modifiers)
+
+  for (let i = 0; i < rolls.length; i++) {
+    const candidate = [...rolls]
+    candidate[i] = rollSingleDie()
+    const damage = maxDamageFromRolls(candidate, weapon, targetRes, modifiers)
+    if (damage > bestDamage) {
+      bestDamage = damage
+      bestRolls = candidate
+    }
+  }
+
+  return bestRolls
+}
+
+/**
+ * @param {DieFace[]} rolls
+ * @param {boolean} reroll
+ * @param {{ glance: number, solid: number, crit: number }} weapon
+ * @param {number} targetRes
+ * @param {SimModifiers} modifiers
+ * @param {{ minDamage?: number, minManeuvers?: number, minJudgements?: number }} requirements
+ * @returns {DieFace[]}
+ */
+export function applyOptionalRerollForManeuvers(
+  rolls,
+  reroll,
+  weapon,
+  targetRes,
+  modifiers,
+  requirements,
+) {
+  if (!reroll || rolls.length === 0) return rolls
+
+  let bestRolls = rolls
+  let best = canMeetManeuverRequirements(rolls, weapon, targetRes, modifiers, requirements)
+
+  for (let i = 0; i < rolls.length; i++) {
+    const candidate = [...rolls]
+    candidate[i] = rollSingleDie()
+    const success = canMeetManeuverRequirements(
+      candidate,
+      weapon,
+      targetRes,
+      modifiers,
+      requirements,
+    )
+    if (success && !best) {
+      best = true
+      bestRolls = candidate
+    }
+  }
+
+  return bestRolls
+}
+
+/**
+ * @param {DieFace[]} rolls
+ * @param {{ glance: number, solid: number, crit: number }} weapon
+ * @param {number} targetRes
+ * @param {SimModifiers} modifiers
+ * @param {{ minDamage?: number, minManeuvers?: number, minJudgements?: number }} requirements
+ * @returns {boolean}
+ */
+export function canMeetManeuverRequirements(
+  rolls,
+  weapon,
+  targetRes,
+  modifiers,
+  requirements,
+) {
+  const minDamage = requirements.minDamage ?? 1
+  const minManeuvers = requirements.minManeuvers ?? 0
+  const minJudgements = requirements.minJudgements ?? 0
+  const chooseCount = Math.min(3, rolls.length)
+  const choices = enumerateDiceChoices(rolls, chooseCount)
+
+  for (const choice of choices) {
+    const damage = resolveDamage(choice, weapon, targetRes, modifiers)
+    const summary = summarizeChosenDice(choice)
+    if (
+      damage >= minDamage
+      && summary.maneuvers >= minManeuvers
+      && summary.judgements >= minJudgements
+    ) {
+      return true
+    }
+  }
+
+  return false
 }
 
 /**
@@ -62,23 +289,23 @@ export function weaponDamageForTier(weapon, tier) {
  * @param {DieFace[]} chosen
  * @param {{ glance: number, solid: number, crit: number }} weapon
  * @param {number} targetRes
+ * @param {SimModifiers} [modifiers]
  * @returns {number}
  */
-export function resolveDamage(chosen, weapon, targetRes) {
-  const hitCount = chosen.reduce((sum, die) => sum + die.hits, 0)
-  const tier = hitsToTier(hitCount)
+export function resolveDamage(chosen, weapon, targetRes, modifiers = EMPTY_MODIFIERS) {
+  const summary = summarizeChosenDice(chosen)
+  const tier = hitsToTier(summary.hits)
   const raw = weaponDamageForTier(weapon, tier)
-  return Math.max(0, raw - targetRes)
+  const effectiveRes = Math.max(0, targetRes - (modifiers.armourPiercing ?? 0))
+  const base = Math.max(0, raw - effectiveRes)
+  return base + (modifiers.damageBonus ?? 0)
 }
 
 /**
  * @param {object} params
- * @param {{ stats: Record<string, number|null> }} params.attacker
- * @param {{ stats: Record<string, number|null> }} params.target
- * @param {{ type: string }} params.weapon
- * @param {boolean} params.charge
- * @param {boolean} params.followUpAttack
- * @param {boolean} params.cover
+ * @param {boolean} [params.chargeEligible]
+ * @param {boolean} [params.dualWieldPenalty]
+ * @param {number} [params.miscDiceModifier]
  * @returns {number}
  */
 export function calculateDicePoolSize({
@@ -86,20 +313,24 @@ export function calculateDicePoolSize({
   target,
   weapon,
   charge,
-  followUpAttack,
+  chargeEligible = true,
+  dualWieldPenalty = false,
+  miscDiceModifier = 0,
   cover,
+  modifiers = EMPTY_MODIFIERS,
 }) {
+  const adjustedAttacker = applyStatModifiers(attacker.stats, normalizeModifiers(modifiers))
   const statKey = weapon.type.toLowerCase()
-  const attackStat = attacker.stats[statKey] ?? 0
+  const attackStat = adjustedAttacker[statKey] ?? 0
   const targetAgi = target.stats.agi ?? 0
 
   let pool = attackStat <= targetAgi ? 1 : attackStat - targetAgi
 
-  if (weapon.type === 'MEL' && charge && !followUpAttack) {
+  if (weapon.type === 'MEL' && charge && chargeEligible && !dualWieldPenalty) {
     pool += 2
   }
 
-  if (followUpAttack) {
+  if (dualWieldPenalty) {
     pool -= 1
   }
 
@@ -108,33 +339,276 @@ export function calculateDicePoolSize({
     else if (weapon.type === 'MEL' || weapon.type === 'MAG') pool -= 1
   }
 
+  pool += modifiers.extraDice ?? 0
+  pool += miscDiceModifier ?? 0
+
   return Math.max(1, pool)
 }
 
 /**
  * @param {object} params
- * @param {number} [params.iterations=1000]
- * @returns {{ poolSize: number, distribution: Record<number, number>, probabilities: Record<number, number> }}
+ * @param {boolean} [params.secondBasicAttack]
+ * @param {boolean} [params.thirdBasicAttack]
+ * @param {boolean} [params.dualWieldAttack]
+ * @returns {AttackStep[]}
+ */
+export function buildAttackSequence({
+  secondBasicAttack = false,
+  thirdBasicAttack = false,
+  dualWieldAttack = false,
+}) {
+  /** @type {AttackStep[]} */
+  const sequence = []
+
+  /** @param {number} index @param {boolean} chargeEligible @param {string} label */
+  function addBasicAttack(index, chargeEligible, label) {
+    sequence.push({
+      kind: 'basic',
+      index,
+      chargeEligible,
+      dualWieldPenalty: false,
+      label,
+    })
+    if (dualWieldAttack) {
+      sequence.push({
+        kind: 'dualWield',
+        index,
+        chargeEligible: false,
+        dualWieldPenalty: true,
+        label: `Dual Wield (${label})`,
+      })
+    }
+  }
+
+  addBasicAttack(0, true, '1st basic')
+  if (secondBasicAttack) addBasicAttack(1, false, '2nd basic')
+  if (thirdBasicAttack) addBasicAttack(2, false, '3rd basic')
+
+  return sequence
+}
+
+/**
+ * @param {'combined' | 'first' | 'second' | 'third' | 'dualWield'} simulationScope
+ * @param {AttackStep[]} attackSequence
+ * @returns {AttackStep[]}
+ */
+export function resolveSimulationScope(simulationScope, attackSequence) {
+  if (simulationScope === 'combined') return attackSequence
+
+  const pick = (labelMatch) => attackSequence.find(step =>
+    simulationScope === 'dualWield'
+      ? step.kind === 'dualWield'
+      : step.kind === 'basic' && step.index === labelMatch,
+  )
+
+  if (simulationScope === 'first') {
+    return attackSequence.filter(step => step.kind === 'basic' && step.index === 0).slice(0, 1)
+  }
+  if (simulationScope === 'second') {
+    const step = pick(1)
+    return step ? [step] : []
+  }
+  if (simulationScope === 'third') {
+    const step = pick(2)
+    return step ? [step] : []
+  }
+  if (simulationScope === 'dualWield') {
+    return attackSequence.filter(s => s.kind === 'dualWield')
+  }
+
+  return attackSequence
+}
+
+/**
+ * @param {object} params
+ * @param {AttackStep} attackStep
+ * @returns {number}
+ */
+export function rollSingleAttackDamage(params, attackStep) {
+  const modifiers = normalizeModifiers(params.modifiers)
+  const poolSize = calculateDicePoolSize({
+    ...params,
+    chargeEligible: attackStep.chargeEligible,
+    dualWieldPenalty: attackStep.dualWieldPenalty,
+    modifiers,
+  })
+  let rolls = rollDicePool(poolSize)
+  rolls = applyOptionalRerollForDamage(
+    rolls,
+    params.tryAgainReroll,
+    params.weapon,
+    params.target.stats.res ?? 0,
+    modifiers,
+  )
+  const chosen = chooseBestDiceForDamage(rolls)
+  return resolveDamage(chosen, params.weapon, params.target.stats.res ?? 0, modifiers)
+}
+
+/**
+ * @param {object} params
+ * @param {number} [iterations=1000]
  */
 export function runMonteCarloSimulation(params, iterations = 1000) {
-  const poolSize = calculateDicePoolSize(params)
+  const modifiers = normalizeModifiers(params.modifiers)
+  const fullSequence = buildAttackSequence(params)
+  const attackSequence = resolveSimulationScope(params.simulationScope ?? 'combined', fullSequence)
+  const poolSize = attackSequence.length
+    ? calculateDicePoolSize({
+      ...params,
+      chargeEligible: attackSequence[0].chargeEligible,
+      dualWieldPenalty: attackSequence[0].dualWieldPenalty,
+      modifiers,
+    })
+    : 0
   /** @type {Record<number, number>} */
   const distribution = {}
 
   for (let i = 0; i < iterations; i++) {
-    const rolls = rollDicePool(poolSize)
-    const chosen = chooseBestDiceForDamage(rolls)
-    const damage = resolveDamage(chosen, params.weapon, params.target.stats.res ?? 0)
-    distribution[damage] = (distribution[damage] ?? 0) + 1
+    let totalDamage = 0
+    for (const attackStep of attackSequence) {
+      totalDamage += rollSingleAttackDamage({ ...params, modifiers }, attackStep)
+    }
+    distribution[totalDamage] = (distribution[totalDamage] ?? 0) + 1
   }
 
+  return finalizeSimulationResult({
+    poolSize,
+    attackSequence,
+    params: { ...params, modifiers },
+    distribution,
+    iterations,
+  })
+}
+
+/**
+ * @param {object} params
+ * @param {Array<{ id: string, label: string, modifiers: SimModifiers }>} scenarios
+ * @param {number} [iterations=1000]
+ */
+export function runComparisonSimulation(params, scenarios, iterations = 1000) {
+  return scenarios.map(scenario => ({
+    id: scenario.id,
+    label: scenario.label,
+    ...runMonteCarloSimulation({ ...params, modifiers: scenario.modifiers }, iterations),
+  }))
+}
+
+/**
+ * @param {object} params
+ * @param {{ minDamage?: number, minManeuvers?: number, minJudgements?: number, attackIndex?: number }} requirements
+ * @param {number} [iterations=1000]
+ */
+export function runManeuverSimulation(params, requirements, iterations = 1000) {
+  const modifiers = normalizeModifiers(params.modifiers)
+  const fullSequence = buildAttackSequence(params)
+  const attackIndex = requirements.attackIndex ?? 0
+  const attackStep = fullSequence.find(step =>
+    step.kind === 'basic' && step.index === attackIndex,
+  ) ?? fullSequence.find(step => step.kind === 'dualWield')
+    ?? fullSequence[0]
+
+  if (!attackStep) {
+    return {
+      poolSize: 0,
+      attackIndex,
+      iterations,
+      successes: 0,
+      probability: 0,
+      requirements: {
+        minDamage: requirements.minDamage ?? 1,
+        minManeuvers: requirements.minManeuvers ?? 0,
+        minJudgements: requirements.minJudgements ?? 0,
+      },
+    }
+  }
+
+  const poolSize = calculateDicePoolSize({
+    ...params,
+    chargeEligible: attackStep.chargeEligible,
+    dualWieldPenalty: attackStep.dualWieldPenalty,
+    modifiers,
+  })
+  let successes = 0
+  const maneuverRequirements = {
+    minDamage: requirements.minDamage ?? 1,
+    minManeuvers: requirements.minManeuvers ?? 0,
+    minJudgements: requirements.minJudgements ?? 0,
+  }
+
+  for (let i = 0; i < iterations; i++) {
+    let rolls = rollDicePool(poolSize)
+    rolls = applyOptionalRerollForManeuvers(
+      rolls,
+      params.tryAgainReroll,
+      params.weapon,
+      params.target.stats.res ?? 0,
+      modifiers,
+      maneuverRequirements,
+    )
+    if (canMeetManeuverRequirements(
+      rolls,
+      params.weapon,
+      params.target.stats.res ?? 0,
+      modifiers,
+      maneuverRequirements,
+    )) {
+      successes++
+    }
+  }
+
+  return {
+    poolSize,
+    attackIndex,
+    attackStep: attackStep.label,
+    iterations,
+    successes,
+    probability: successes / iterations,
+    requirements: maneuverRequirements,
+  }
+}
+
+/**
+ * @param {object} input
+ * @returns {object}
+ */
+function finalizeSimulationResult({ poolSize, attackSequence, params, distribution, iterations }) {
   /** @type {Record<number, number>} */
   const probabilities = {}
   for (const [damage, count] of Object.entries(distribution)) {
     probabilities[Number(damage)] = count / iterations
   }
 
-  return { poolSize, distribution, probabilities }
+  return {
+    poolSize,
+    attackCount: attackSequence.length,
+    attackPools: attackSequence.map(step =>
+      calculateDicePoolSize({
+        ...params,
+        chargeEligible: step.chargeEligible,
+        dualWieldPenalty: step.dualWieldPenalty,
+      }),
+    ),
+    attackLabels: attackSequence.map(step => step.label),
+    distribution,
+    probabilities,
+    cumulativeProbabilities: cumulativeProbabilities(probabilities),
+  }
+}
+
+/**
+ * @param {Record<number, number>} probabilities
+ * @returns {Record<number, number>}
+ */
+export function cumulativeProbabilities(probabilities) {
+  const damages = Object.keys(probabilities).map(Number).sort((a, b) => a - b)
+  /** @type {Record<number, number>} */
+  const cumulative = {}
+  let running = 0
+  for (let i = damages.length - 1; i >= 0; i--) {
+    running += probabilities[damages[i]] ?? 0
+    cumulative[damages[i]] = running
+  }
+  return cumulative
 }
 
 /**
@@ -148,4 +622,51 @@ export function averageDamage(distribution) {
     (sum, [damage, count]) => sum + Number(damage) * count,
     0,
   ) / total
+}
+
+/**
+ * @param {Array<{ distribution: Record<number, number>, probabilities: Record<number, number>, cumulativeProbabilities: Record<number, number> }>} results
+ */
+export function mergeComparisonDistributions(results) {
+  const damageValues = new Set()
+  for (const result of results) {
+    for (const damage of Object.keys(result.distribution)) {
+      damageValues.add(Number(damage))
+    }
+  }
+
+  return [...damageValues].sort((a, b) => a - b).map(damage => ({
+    damage,
+    series: results.map(result => ({
+      count: result.distribution[damage] ?? 0,
+      probability: result.probabilities[damage] ?? 0,
+      cumulative: result.cumulativeProbabilities[damage] ?? 0,
+    })),
+  }))
+}
+
+/**
+ * @param {{ effects: SimModifiers }} artefact
+ * @returns {SimModifiers}
+ */
+export function modifiersFromArtefact(artefact) {
+  if (!artefact?.effects) return { ...EMPTY_MODIFIERS }
+  return normalizeModifiers({
+    melBonus: artefact.effects.melBonus,
+    magBonus: artefact.effects.magBonus,
+    rngBonus: artefact.effects.rngBonus,
+    agiBonus: artefact.effects.agiBonus,
+    resBonus: artefact.effects.resBonus,
+    armourPiercing: artefact.effects.armourPiercing,
+    damageBonus: artefact.effects.damageBonus,
+    extraDice: artefact.effects.extraDice,
+  })
+}
+
+/**
+ * @param {AttackStep[]} attackSequence
+ * @returns {boolean}
+ */
+export function isSingleAttackSimulation(attackSequence) {
+  return attackSequence.length === 1
 }

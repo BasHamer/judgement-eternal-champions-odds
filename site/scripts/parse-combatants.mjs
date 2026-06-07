@@ -75,8 +75,16 @@ function parseFile(content, kind) {
     const slug = match[2].trim()
     let stats = { mov: null, agi: null, mel: null, mag: null, rng: null, res: 0 }
     let weapons = []
+    let dualWield = false
+    let dualWieldName = null
 
     for (let i = 1; i < lines.length; i++) {
+      if (lines[i].startsWith('dual_wield:')) {
+        dualWield = lines[i].includes('true')
+      }
+      if (lines[i].startsWith('dual_wield_name:')) {
+        dualWieldName = lines[i].slice('dual_wield_name:'.length).trim()
+      }
       if (lines[i].startsWith('| Stat |')) {
         const parsed = parseSection(lines, i + 1)
         stats = { ...stats, ...parsed.stats }
@@ -96,6 +104,7 @@ function parseFile(content, kind) {
       kind,
       stats,
       weapons,
+      ...(kind === 'hero' ? { dualWield, dualWieldName } : {}),
     })
   }
 

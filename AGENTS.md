@@ -48,6 +48,9 @@ dotnet run --project tools/pdf-extractor
 
 # Download HoEC collection data
 dotnet run --project tools/hoec-downloader
+
+# Download only artefacts
+dotnet run --project tools/hoec-downloader -- --artefacts-only
 ```
 
 ## Data Refresh Workflow
@@ -55,7 +58,7 @@ dotnet run --project tools/hoec-downloader
 1. Place updated rulebook PDF in `raw/`
 2. Run `pdf-extractor` → `docs/rules-full.md`
 3. Run `/rules-min-context.sop` → `docs/rules-min-context.md`
-4. Run `hoec-downloader` → `docs/heroes.md`, `docs/monsters.md`, `docs/summons.md`
+4. Run `hoec-downloader` → `docs/heroes.md`, `docs/monsters.md`, `docs/summons.md`, `docs/artefacts.md`
 
 ## Conventions
 

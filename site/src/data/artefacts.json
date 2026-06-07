@@ -1,0 +1,670 @@
+{
+  "generatedAt": "2026-06-07T17:20:13.470Z",
+  "artefacts": [
+    {
+      "id": "amulet-of-belaal",
+      "name": "Amulet of Belaal",
+      "slot": "Offensive",
+      "cost": "1 Fate",
+      "category": "Sacred",
+      "effects": {
+        "melBonus": 1,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 1,
+        "extraDice": 0
+      },
+      "description": "While adjacent to a hex that contains a Coalese Icon, the bearer gains +1 MEL, RNG or MAG (choose one) and +1 damage to basic attacks. The damage bonus from the Amulet of Belaal does not stack with Arcane Spirit’s damage bonus and does not apply to 0AP attacks.",
+      "hasSimEffects": true
+    },
+    {
+      "id": "armour-shredder",
+      "name": "Armour Shredder",
+      "slot": "Offensive",
+      "cost": "1 Fate",
+      "category": "General",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 1,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer's Basic Attacks gain Armour Piercing(1).",
+      "hasSimEffects": true
+    },
+    {
+      "id": "axes-of-grimosh",
+      "name": "Axes of Grimosh",
+      "slot": "Offensive",
+      "cost": "1 Fate",
+      "category": "Sacred",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Axes of Grimosh is a Reach (1) 2/3/4 MEL weapon. Choose a MEL weapon on the bearer’s card. Replace all references on the bearer’s card to their chosen MEL weapon with “Axes of Grimosh”. Bearer gains Dual Wield (Axes of Grimosh). Fury tokens cannot be generated from Axes of Grimosh Dual Wield attacks.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "blood-sucker",
+      "name": "Blood Sucker",
+      "slot": "Defensive",
+      "cost": "1 Fate",
+      "category": "General",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer gains Leech(2). Cannot stack with other Leech abilities",
+      "hasSimEffects": false
+    },
+    {
+      "id": "boots-of-agility",
+      "name": "Boots of Agility",
+      "slot": "Defensive",
+      "cost": "1 Fate",
+      "category": "General",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 1,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "+1 AGI",
+      "hasSimEffects": true
+    },
+    {
+      "id": "boots-of-stability",
+      "name": "Boots of Stability",
+      "slot": "Defensive",
+      "cost": "1 Fate",
+      "category": "General",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer gains Steady and Regeneration(2). Cannot stack with other Regeneration.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "bracers-of-disruption",
+      "name": "Bracers of Disruption",
+      "slot": "Defensive",
+      "cost": "Free",
+      "category": "General",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer gains the following Active Ability: \r\n - Disrupt (1F): Interrupt an enemy Hero's Basic Attack targeting the bearer. Interrupt after Combat Manoeuvres are chosen but before they are executed. Cancel the Combat Manoeuvre. Once per enemy Hero activation.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "breastplate-of-jakaar",
+      "name": "Breastplate of Jakaar",
+      "slot": "Defensive",
+      "cost": "Free",
+      "category": "Sacred",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 1,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Non-Defender model gains +1 RES when 13 health or less, and an additional +1 when 8 health or less. Breastplate of Jakaar cannot raise RES above 2.",
+      "hasSimEffects": true
+    },
+    {
+      "id": "demon-blade",
+      "name": "Demon Blade",
+      "slot": "Offensive",
+      "cost": "1 Fate",
+      "category": "Monster",
+      "effects": {
+        "melBonus": 1,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 1,
+        "extraDice": 0
+      },
+      "description": "Bearer loses “Immunity (curse)” and gains the curse condition (cannot be removed). Bearer's MEL Basic Attacks gain the following: \r\n - +1 MEL, +1 damage. \r\n - Curse(J) - [Manoeuvre] Enemy damaged by Demon Blade suffers curse.",
+      "hasSimEffects": true
+    },
+    {
+      "id": "diamond-armour",
+      "name": "Diamond Armour",
+      "slot": "Defensive",
+      "cost": "1 Fate",
+      "category": "Sacred",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 1,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer gains +1 RES. The RES of the bearer cannot be reduced below 1, except by True Damage. Diamond Armour cannot be equipped by Heroes with the Defender innate ability. The Glyph of Warding magical artefact is removed from the bearer's Warband's artefact deck at the start of the game.",
+      "hasSimEffects": true
+    },
+    {
+      "id": "elixir-of-life",
+      "name": "Elixir of Life",
+      "slot": "Defensive",
+      "cost": "1 Fate",
+      "category": "General",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer gains the following Innate Ability: \r\n - Save Me (Interrupt): If the bearer is reduced to zero health, they may Interrupt the Hero Death sequence. The Interrupt occurs at Step 5 of the attack process, at Phase 1 of Hero Death. The bearer Heals 1 health and may be placed adjacent to a friendly Hero within 5 hexes. Remove Elixir of Life from the game.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "equality-stone",
+      "name": "Equality Stone",
+      "slot": "Defensive",
+      "cost": "Free",
+      "category": "Sacred",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer can pay (1AP+1F) to swap their current basic health with an enemy model adjacent to them. If the health difference between the 2 models is greater than 10, the models will only gain and lose 10 health each. Health gained cannot exceed the bearer's current maximum, any excess health gained is lost. Remove Equality Stone from the game.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "gem-of-arfaen",
+      "name": "Gem of Arfaen",
+      "slot": "Defensive",
+      "cost": "Free",
+      "category": "Sacred",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer gains the following Active Ability: Gravity Well (1F): This model gains Gravity Well (this model cannot be charged). Expires at the start of this model’s next activation.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "gift-of-the-gods",
+      "name": "Gift of the Gods",
+      "slot": "Defensive",
+      "cost": "Free",
+      "category": "General",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer gains the following ability: \r\n - Favoured (Interrupt) (1F): When an enemy Hero or Summoned within 2 hexes rolls dice for an Attack, Ability, or Soul Harvest the bearer may spend  1 Fate to Interrupt that action. Interrupt immediately after dice ar rolled. Enemy model must re-roll the dice pool.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "glyph-of-warding",
+      "name": "Glyph of Warding",
+      "slot": "Defensive",
+      "cost": "2 Fate",
+      "category": "General",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 1,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer gains +1 RES. Cannot be used by Heroes with the Defender innate ability.",
+      "hasSimEffects": true
+    },
+    {
+      "id": "greaves-of-elvenkind",
+      "name": "Greaves of Elvenkind",
+      "slot": "Offensive",
+      "cost": "1 Fate",
+      "category": "General",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer gains +1 MOV and the Pathfinder ability.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "hammer-of-thergrum",
+      "name": "Hammer of Thergrum",
+      "slot": "Offensive",
+      "cost": "Free",
+      "category": "Sacred",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer gains the following Active Ability: Hammer Smash (1AP+1F): Target adjacent enemy suffers 3 True Damage and is placed 3 hexes from their current hex directly away from this model, in the furthest unoccupied hex.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "healing-surge",
+      "name": "Healing Surge",
+      "slot": "Defensive",
+      "cost": "2 Fate",
+      "category": "General",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer gains the following Active Ability: Healing Surge (1AP): Friendly adjacent model heals 10 health. Remove Healing Surge from the game.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "heart-seeker",
+      "name": "Heart Seeker",
+      "slot": "Offensive",
+      "cost": "1 Fate",
+      "category": "General",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 1,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "+1 RNG",
+      "hasSimEffects": true
+    },
+    {
+      "id": "helm-of-distortion",
+      "name": "Helm of Distortion",
+      "slot": "Defensive or Offensive",
+      "cost": "Free",
+      "category": "Sacred",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer decides whether the Helm of Distortion occupies an Offensive or Defensive slot at the time of purchase.  Bearer gains the following: \r\n \r\n Astral Split (1AP + 1F) - [Active] Bearer switches places with target enemy within 3 hexes. Both models are Placed in the hex of the other model with which they were switched.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "hunters-knife",
+      "name": "Hunter's Knife",
+      "slot": "Offensive",
+      "cost": "1 Fate",
+      "category": "General",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 2,
+        "extraDice": 0
+      },
+      "description": "Bearer gains +2 damage for Basic Attacks vs Monsters and Summoned. \r\n - Hunt (0AP): +1 damage for Basic Attacks that don't target the Effigy. Expires at the end of the activation. One Use Only.",
+      "hasSimEffects": true
+    },
+    {
+      "id": "rejuvenation-potion",
+      "name": "Rejuvenation Potion",
+      "slot": "Defensive",
+      "cost": "1 Fate",
+      "category": "Monster",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer gains the following Active Ability: \r\n - Rejuvenate (0AP): Friendly models within 2 hexes have all Conditions removed and heal for 5 health. Remove Rejuvenation Potion from the game.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "restoration-potion",
+      "name": "Restoration Potion",
+      "slot": "Defensive",
+      "cost": "Free",
+      "category": "Sacred",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer gains the following Active Ability: \r\n - Restore (1AP+1F): Friendly adjacent model heals for 10 health. The Healing Surge magic artefact is removed from the bearer's Warband's artefact deck at the start of the game. Remove Restoration Potion from the game.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "ring-of-power",
+      "name": "Ring of Power",
+      "slot": "Offensive",
+      "cost": "1 Fate",
+      "category": "General",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 1,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "+1 MAG",
+      "hasSimEffects": true
+    },
+    {
+      "id": "ring-of-stealth",
+      "name": "Ring of Stealth",
+      "slot": "Defensive",
+      "cost": "Free",
+      "category": "General",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer gains the following Active Ability: \r\n - Stealth(1AP or 1F): Bearer gains Stealth until the start of their next activation.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "rod-of-necromancy",
+      "name": "Rod of Necromancy",
+      "slot": "Offensive",
+      "cost": "1 Fate",
+      "category": "Monster",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer gains the Combat Manoeuvre (2S) - Enemy damaged by this model’s Basic Attacks suffers fear. If a (J) was rolled and the enemy was damaged, the model is dealt an additional 1 True Damage.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "scroll-of-power",
+      "name": "Scroll of Power",
+      "slot": "Offensive",
+      "cost": "1 Fate",
+      "category": "Monster",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 1,
+        "extraDice": 0
+      },
+      "description": "Power Infused (0AP): while within 2 hexes of this model, friendly models gain +1 damage to their Basic Attacks that don't target the Effigy. Expires at the start of this model's next activation. Remove Scroll of Power from the game.",
+      "hasSimEffects": true
+    },
+    {
+      "id": "scroll-of-teleportation",
+      "name": "Scroll of Teleportation",
+      "slot": "Defensive",
+      "cost": "Free",
+      "category": "General",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer can Effigy Recall for (1AP) instead of (2AP). Remove Scroll of Teleportation from the game.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "second-wind",
+      "name": "Second Wind",
+      "slot": "Offensive",
+      "cost": "Free",
+      "category": "Sacred",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "The first time a model kills an enemy model during its activation, it can spend 1 Fate to gain 1 additional AP for that activation. Only 1AP can be purcahsed this way per use.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "shield-of-sir-gunther",
+      "name": "Shield of Sir Gunther",
+      "slot": "Defensive",
+      "cost": "Free",
+      "category": "Sacred",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer gains the following Active Ability: Hardened (1F): Critical Hits scored against this model are changed to Solid Hits. Lasts until the start of this model’s next activation. The Shield of Sir Gunther has no effect when the bearer’s RES is greater than zero.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "staff-of-grul",
+      "name": "Staff of Grul",
+      "slot": "Offensive",
+      "cost": "1 Fate",
+      "category": "Sacred",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer gains Reach(2) on its Melee Attacks. Choose one of poison/curse/burn/fear/freeze. This model gains the Combat Manoeuvre '(2S) - Enemy damaged by this model's Basic Attacks suffers the chosen condition.'",
+      "hasSimEffects": false
+    },
+    {
+      "id": "tome-of-experience",
+      "name": "Tome of Experience",
+      "slot": "Offensive",
+      "cost": "2 Fate",
+      "category": "General",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Experience Tome (1AP): Gain 1 level. Remove Tome of Experience from the game.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "umbra-sphere",
+      "name": "Umbra Sphere",
+      "slot": "Defensive",
+      "cost": "Free",
+      "category": "Sacred",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "When Shadow Dance is declared, friendly heroes within 2 hexes of the Umbra Sphere bearer are considered Champions of Krognar for the purposes of Shadow Dance only. Bearer gains the following Active Ability: Shadow Rift (0AP): Place a Shadow Orb Icon in an unoccupied hex adjacent to this model.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "vampiric-blade",
+      "name": "Vampiric Blade",
+      "slot": "Offensive",
+      "cost": "1 Fate",
+      "category": "Sacred",
+      "effects": {
+        "melBonus": 0,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer gains +1 Leech, Unerring Accuracy and the combat manoeuvre Mortal Wounds (2): Enemy Hero damaged by this model’s Basic Attacks gains Mortal Wounds. A model with Mortal Wounds is unable to Heal by any means until the end of its next activation, after which Mortal Wounds expires.",
+      "hasSimEffects": false
+    },
+    {
+      "id": "vorpal-blade",
+      "name": "Vorpal Blade",
+      "slot": "Offensive",
+      "cost": "1 Fate",
+      "category": "General",
+      "effects": {
+        "melBonus": 1,
+        "magBonus": 0,
+        "rngBonus": 0,
+        "agiBonus": 0,
+        "resBonus": 0,
+        "armourPiercing": 0,
+        "damageBonus": 0,
+        "extraDice": 0
+      },
+      "description": "Bearer gains +1 MEL",
+      "hasSimEffects": true
+    }
+  ]
+}

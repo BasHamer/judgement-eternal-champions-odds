@@ -1,5 +1,6 @@
 using System.Text;
 using HoecDownloader.Models;
+using HoecDownloader.Services;
 
 namespace HoecDownloader.Writers;
 
@@ -17,6 +18,15 @@ public static class MarkdownWriters
             sb.AppendLine($"## {hero.Name} ({hero.Slug})");
             sb.AppendLine();
             sb.AppendLine($"test_realm: {hero.TestRealm.ToString().ToLowerInvariant()}");
+            if (HeroAbilityParser.TryGetDualWield(hero, out string? dualWieldLabel))
+            {
+                sb.AppendLine($"dual_wield: true");
+                sb.AppendLine($"dual_wield_name: {dualWieldLabel}");
+            }
+            else
+            {
+                sb.AppendLine("dual_wield: false");
+            }
             sb.AppendLine();
             WriteStatsTable(sb, FormatInt(hero.StatsMov), FormatInt(hero.StatsAgi), FormatInt(hero.StatsMel),
                 FormatInt(hero.StatsMag), FormatInt(hero.StatsRng), FormatInt(hero.StatsRes));
@@ -83,6 +93,47 @@ public static class MarkdownWriters
             sb.AppendLine($"| Race | {summon.MonsterRaces?.Name ?? "—"} |");
             sb.AppendLine();
             WriteWeaponsTable(sb, summon.Weapons);
+            sb.AppendLine();
+        }
+
+        return sb.ToString();
+    }
+
+    public static string WriteArtefacts(IReadOnlyList<ArtefactSummary> artefacts)
+    {
+        var sb = new StringBuilder();
+        WriteFrontmatter(sb, "https://www.hallofeternalchampions.com/api/artefacts", artefacts.Count, "artefact_count");
+        sb.AppendLine("# Artefacts");
+        sb.AppendLine();
+
+        foreach (ArtefactSummary artefact in artefacts.OrderBy(a => a.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            ArtefactSimEffects effects = ArtefactEffectParser.Parse(artefact.Description);
+            sb.AppendLine($"## {artefact.Name} ({artefact.Slug})");
+            sb.AppendLine();
+            sb.AppendLine($"slot: {artefact.Type}");
+            sb.AppendLine($"cost: {artefact.Cost}");
+            sb.AppendLine($"category: {artefact.Category}");
+            sb.AppendLine();
+            sb.AppendLine("### Sim effects");
+            sb.AppendLine();
+            sb.AppendLine("| Effect | Value |");
+            sb.AppendLine("|--------|-------|");
+            sb.AppendLine($"| mel_bonus | {effects.MelBonus} |");
+            sb.AppendLine($"| mag_bonus | {effects.MagBonus} |");
+            sb.AppendLine($"| rng_bonus | {effects.RngBonus} |");
+            sb.AppendLine($"| agi_bonus | {effects.AgiBonus} |");
+            sb.AppendLine($"| res_bonus | {effects.ResBonus} |");
+            sb.AppendLine($"| armour_piercing | {effects.ArmourPiercing} |");
+            sb.AppendLine($"| damage_bonus | {effects.DamageBonus} |");
+            sb.AppendLine($"| extra_dice | {effects.ExtraDice} |");
+            sb.AppendLine();
+            sb.AppendLine("### Description");
+            sb.AppendLine();
+            foreach (string line in artefact.Description.Replace("\r\n", "\n").Split('\n'))
+            {
+                sb.AppendLine(line);
+            }
             sb.AppendLine();
         }
 

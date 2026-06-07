@@ -1,6 +1,6 @@
 ---
 source: https://www.hallofeternalchampions.com/monsters
-generated_at: 2026-06-07T15:38:25.8921310Z
+generated_at: 2026-06-07T17:05:30.1753861Z
 monster_count: 8
 ---
 

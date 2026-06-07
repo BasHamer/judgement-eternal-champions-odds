@@ -4,9 +4,9 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "predev": "node scripts/parse-combatants.mjs",
+    "predev": "node scripts/parse-combatants.mjs && node scripts/parse-artefacts.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/parse-combatants.mjs",
+    "prebuild": "node scripts/parse-combatants.mjs && node scripts/parse-artefacts.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run"
