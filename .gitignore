@@ -1,0 +1,9 @@
+raw/
+.agents/scratchpad/
+docs/.cache/
+.cursor/commands
+site/node_modules/
+site/dist/
+**/bin/
+**/obj/
+.vs/
