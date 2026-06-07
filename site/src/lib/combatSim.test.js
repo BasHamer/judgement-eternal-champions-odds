@@ -271,7 +271,7 @@ describe('maneuver expected value', () => {
     })).toBeNull()
   })
 
-  it('EV2: chooses manoeuvre path when EV plus weapon damage beats pure damage', () => {
+  it('EV2: takes manoeuvre path when requirements are met', () => {
     const rolls = [
       { hits: 1, maneuver: 0 },
       { hits: 0, maneuver: 1 },
@@ -291,22 +291,25 @@ describe('maneuver expected value', () => {
     expect(outcome.total).toBe(3)
   })
 
-  it('EV3: stays with pure damage when manoeuvre plus EV does not exceed pure', () => {
+  it('EV3: prefers manoeuvre when viable even if pure damage is higher', () => {
     const rolls = [{ hits: 1, maneuver: 0 }, { hits: 0, maneuver: 1 }]
-    const beating = resolveAttackDamageWithManeuverEv(rolls, sabre, 0, {}, {
+    const pure = choosePureDamageOutcome(rolls, sabre, 0, {})
+    expect(pure.total).toBe(1)
+
+    const outcome = resolveAttackDamageWithManeuverEv(rolls, sabre, 0, {}, {
       expectedValue: 1,
       minManeuvers: 1,
       requireMinDamage: true,
     })
-    expect(beating.usedManeuverPath).toBe(true)
-    expect(beating.total).toBe(2)
+    expect(outcome.usedManeuverPath).toBe(true)
+    expect(outcome.total).toBe(2)
 
-    const notBeating = resolveAttackDamageWithManeuverEv(rolls, sabre, 0, {}, {
+    const inactive = resolveAttackDamageWithManeuverEv(rolls, sabre, 0, {}, {
       expectedValue: 0,
       minManeuvers: 1,
     })
-    expect(notBeating.usedManeuverPath).toBe(false)
-    expect(notBeating.total).toBe(1)
+    expect(inactive.usedManeuverPath).toBe(false)
+    expect(inactive.total).toBe(1)
   })
 
   it('EV4: expected value is not reduced by RES', () => {
@@ -460,22 +463,22 @@ describe('maneuver expected value', () => {
     expect(outcome.expectedValue).toBe(4)
   })
 
-  it('EV12: solid blow plus one manoeuvre symbol meets cost 2 for total 6', () => {
+  it('EV12: strike hits do not pay manoeuvre symbol cost', () => {
     const rolls = [
       { hits: 1, maneuver: 0 },
       { hits: 1, maneuver: 0 },
       { hits: 0, maneuver: 1 },
     ]
-    expect(maneuverSymbolCredit(rolls)).toBe(3)
+    expect(maneuverSymbolCredit(rolls)).toBe(1)
 
     const outcome = resolveAttackDamageWithManeuverEv(rolls, sabre, 0, {}, {
       expectedValue: 4,
       minManeuvers: 2,
       requireMinDamage: true,
     })
-    expect(outcome.usedManeuverPath).toBe(true)
+    expect(outcome.usedManeuverPath).toBe(false)
     expect(outcome.weaponDamage).toBe(2)
-    expect(outcome.total).toBe(6)
+    expect(outcome.total).toBe(2)
   })
 
   it('EV13: two judgements plus manoeuvre face totals 6 (solid + EV)', () => {
@@ -496,6 +499,44 @@ describe('maneuver expected value', () => {
     expect(outcome.weaponDamage).toBe(2)
     expect(outcome.expectedValue).toBe(4)
     expect(outcome.total).toBe(6)
+  })
+
+  it('EV14: with spare dice, one J is enough for cost 2 (glance + EV, not solid)', () => {
+    const rolls = [
+      { hits: 3, maneuver: 0 },
+      { hits: 3, maneuver: 0 },
+      { hits: 0, maneuver: 0 },
+      { hits: 0, maneuver: 0 },
+    ]
+    const pure = choosePureDamageOutcome(rolls, sabre, 0, {})
+    expect(pure.weaponDamage).toBe(4)
+
+    const outcome = resolveAttackDamageWithManeuverEv(rolls, sabre, 0, {}, {
+      expectedValue: 4,
+      minManeuvers: 2,
+      requireMinDamage: true,
+    })
+    expect(outcome.usedManeuverPath).toBe(true)
+    expect(outcome.weaponDamage).toBe(1)
+    expect(outcome.total).toBe(5)
+  })
+
+  it('EV15: three-dice cost-2 success rate matches J/M face math (~45%)', () => {
+    let successes = 0
+    for (let a = 0; a < 6; a++) {
+      for (let b = 0; b < 6; b++) {
+        for (let c = 0; c < 6; c++) {
+          const rolls = [JUDGEMENT_DIE_FACES[a], JUDGEMENT_DIE_FACES[b], JUDGEMENT_DIE_FACES[c]]
+          const outcome = resolveAttackDamageWithManeuverEv(rolls, sabre, 0, {}, {
+            expectedValue: 4,
+            minManeuvers: 2,
+            requireMinDamage: true,
+          })
+          if (outcome.usedManeuverPath) successes++
+        }
+      }
+    }
+    expect(successes / 216).toBeCloseTo(97 / 216, 5)
   })
 })
 

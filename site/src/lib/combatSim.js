@@ -147,18 +147,14 @@ export function enumerateAllDiceChoices(rolls) {
 }
 
 /**
- * Manoeuvre-symbol credit on chosen dice for cost checks. M = 1, J = 2, strike hit
- * symbols = 1 each (same dice still contribute those hits to attack damage).
+ * Manoeuvre-symbol credit on chosen dice for cost checks. Only J and M faces count
+ * (P ≈ 1/3 per die); strike hits do not pay manoeuvre cost. M = 1, J = 2.
  * @param {DieFace[]} chosen
  * @returns {number}
  */
 export function maneuverSymbolCredit(chosen) {
   const summary = summarizeChosenDice(chosen)
-  const strikeHitSymbols = chosen.reduce(
-    (acc, die) => acc + (die.hits >= 3 ? 0 : die.hits),
-    0,
-  )
-  return summary.maneuvers + summary.judgements * 2 + strikeHitSymbols
+  return summary.maneuvers + summary.judgements * 2
 }
 
 /**
@@ -255,8 +251,8 @@ export function isManeuverEvActive(config) {
 }
 
 /**
- * Best dice choice that meets manoeuvre/J requirements and maximizes weapon damage + EV.
- * EV is flat (not reduced by RES); weapon damage is resolved normally.
+ * Dice choice that meets manoeuvre/J requirements with the least weapon damage needed
+ * (enough to satisfy min damage, not max damage). EV is flat (not reduced by RES).
  * @param {DieFace[]} rolls
  * @param {{ glance: number, solid: number, crit: number }} weapon
  * @param {number} targetRes
@@ -280,7 +276,11 @@ export function chooseBestManeuverEvOutcome(rolls, weapon, targetRes, modifiers,
     if (!meetsManeuverEvSymbolRequirements(choice, normalized)) continue
 
     const total = weaponDamage + normalized.expectedValue
-    if (!best || total > best.total || (total === best.total && weaponDamage > best.weaponDamage)) {
+    if (
+      !best
+      || weaponDamage < best.weaponDamage
+      || (weaponDamage === best.weaponDamage && total < best.total)
+    ) {
       best = {
         weaponDamage,
         expectedValue: normalized.expectedValue,
@@ -312,7 +312,8 @@ export function choosePureDamageOutcome(rolls, weapon, targetRes, modifiers) {
 }
 
 /**
- * Pick pure damage unless manoeuvre+EV strictly beats it (ties stay pure).
+ * Prefer the manoeuvre path whenever symbol requirements and min weapon damage are met;
+ * otherwise fall back to pure damage.
  * @param {DieFace[]} rolls
  * @param {{ glance: number, solid: number, crit: number }} weapon
  * @param {number} targetRes
@@ -335,11 +336,11 @@ export function resolveAttackDamageWithManeuverEv(
   }
 
   const maneuver = chooseBestManeuverEvOutcome(rolls, weapon, targetRes, modifiers, config)
-  if (!maneuver || maneuver.total <= pure.total) {
-    return pure
+  if (maneuver) {
+    return maneuver
   }
 
-  return maneuver
+  return pure
 }
 
 /**

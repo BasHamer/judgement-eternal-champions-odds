@@ -602,10 +602,11 @@ function resetTargetStats() {
           v-if="maneuverEvActive"
           class="text-body-2 text-medium-emphasis mb-0"
         >
-          When manoeuvre + EV strictly beats pure damage, the sim takes that path
-          (ties stay pure). EV is not reduced by RES. Symbol cost: M = 1, J = 2,
-          strike hits = 1 each. On the manoeuvre path each J counts as 1 hit for
-          weapon tier (JJ + blanks = solid + EV).
+          When symbol requirements and min weapon damage are met, the sim takes the
+          manoeuvre path using the least weapon damage needed (not max damage). EV is
+          not reduced by RES. Symbol cost uses J and M faces only (≈⅓ per die): M = 1,
+          J = 2. Strike hits deal damage but do not pay manoeuvre cost. On the manoeuvre
+          path each J counts as 1 hit (one J = glance + EV; JJ with 3 dice = solid + EV).
         </p>
 
         <v-divider class="my-4" />
